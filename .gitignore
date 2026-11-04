@@ -1,15 +1,21 @@
-# Core estimation code only (whitelist). Everything else stays local: data/ (Cboe trade files, OptionMetrics/WRDS),
-# results/, overleaf/, logs/ (run scripts and logs), the report PDF/zip, __pycache__.
+# Publish only the production pipeline and its required source/dependency files.
 /*
 !/.gitignore
 !/README.md
-!/*.py
-!/*.R
-# Helper scripts (figures, report tables, table shells, comparisons, lambda bridge) also stay local.
-/make_bin_figure.py
-/make_distance_map.py
-/make_placebo_figure.py
-/make_baseline_report.py
-/fill_table_shells.py
-/compare_variant.py
-/lambda_bridge.py
+!/requirements.txt
+!/setup_R.R
+!/config.py
+!/Build_Panel.py
+!/Build_Event_Panel.py
+!/Estimate_Lambda.py
+!/Measure_Similarity.py
+!/Reduced_Form.R
+!/Structural_Model.py
+!/Inference.py
+!/Make_Results.py
+!/Run_All.py
+!/assets/
+/assets/*
+!/assets/templates/
+/assets/templates/*
+!/assets/templates/main_shell_template.tex

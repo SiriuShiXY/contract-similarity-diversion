@@ -1,0 +1,533 @@
+% Table Plan -- "Is the 0DTE Boom Real? Expiration Listings and the
+% Reallocation of Option Demand". Compiles with pdfLaTeX on Overleaf.
+%
+% Each table is a [H] float holding a threeparttable: caption above,
+% booktabs rules, notes in tablenotes, then a "What this table shows" box.
+% Fill in results by replacing \ph (grey x.xx) and \phse (grey (x.xx)).
+\documentclass[11pt]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% Placeholders: grey estimate and grey standard error
+\newcommand{\ph}{\textcolor{gray}{x.xx}}
+\newcommand{\phse}{\textcolor{gray}{(x.xx)}}
+
+% Column types
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% Boxed commentary below each table
+\newenvironment{tableshows}
+  {\begin{center}\begin{minipage}{0.95\textwidth}\small
+   \hrule\vspace{4pt}
+   \textbf{What this table shows}\par
+   \begin{itemize}[leftmargin=12pt,topsep=4pt,itemsep=4pt,parsep=0pt]}
+  {\end{itemize}\vspace{2pt}\hrule\end{minipage}\end{center}}
+
+\title{Table Plan\\[4pt]\large\textit{Is the 0DTE Boom Real? Expiration Listings and the Reallocation of Option Demand}}
+\author{}
+\date{October 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Overview}
+
+The tables follow the paper's chain of argument. Grey \ph{} entries are placeholders. Numbers in black are taken from the existing reports (\textit{Existing and New Contracts after the Weekly-Expiration Listings} and \textit{Is the Control Group Affected by the New Expirations?}) and must be recomputed under the new definitions (delta notional, control-family adjustment) before use. Entries marked $^\dagger$ must be verified against exchange notices.
+
+\begin{table}[H]
+\small
+\begin{tabularx}{\textwidth}{clLl}
+\toprule
+\textbf{Table} & \textbf{Step in the argument} & \textbf{Question} & \textbf{Status} \\
+\midrule
+1  & Setting                & Which listing events, and how dense was the calendar before each? & Existing, extended \\
+2  & 1. Facts               & How much volume do new contracts take, and how much do existing contracts lose? & Existing, redone \\
+3  & 1. Facts               & Are losses concentrated in contracts that lose nearest-expiry status? & New \\
+4  & 2. How much            & What share of new volume is reallocated, and does it rise with calendar density? & New \\
+5  & 3. Why these contracts & Do contracts more similar to the new ones lose more volume? & New (core) \\
+6  & 3. Mechanism           & Do investors substitute on contract terms, exposure, or payoffs? Is there a salience effect? & New \\
+7  & 3. Extension           & Do investors substitute across products on the same index? & New (index data) \\
+8  & 4. Consequences        & Do contracts that lose volume become less liquid? & Existing + new \\
+9  & 5. Identification      & Is the control group affected? & Existing + new \\
+10 & 6. Generalization      & How much of the 0DTE boom is relabeled demand? & New \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Minimum version for a first draft:} Tables 1, 2, 4, 5, 8 and 9 tell the full story and use only the existing ETF data. Tables 6, 7 and 10 can be added in later versions. If space is tight, Table 3 can become column (1) of Table 5.
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 1: Listing Events and Sample}
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{threeparttable}
+\caption{Listing Events and Sample}
+\begin{tabular}{llllccrr}
+\toprule
+Event & Product & Weekdays & Listing date(s) & $n_e$ & Control  & Pre-event volume            & Cells \\
+      &         & added    &                 &       & families & (\$bn $\Delta$-notional/day) & existing / new \\
+\midrule
+1  & SPY      & Wed      & 2016-08-30               & 1           & N100, R2000      & \ph & \ph{} / \ph \\
+2  & SPY      & Mon      & 2018-02-16               & 2           & N100, R2000      & \ph & \ph{} / \ph \\
+3  & QQQ      & Mon, Wed & 2021-04-23/27            & 1           & S\&P\,500, R2000  & \ph & \ph{} / \ph \\
+4  & IWM      & Mon, Wed & 2021-10-05/08            & 1           & S\&P\,500, N100   & \ph & \ph{} / \ph \\
+5  & SPX      & Tue, Thu & 2022 (spring)$^\dagger$  & 3$^\dagger$ & N100, R2000      & \ph & \ph{} / \ph \\
+6  & SPY, QQQ & Tue, Thu & 2022-11-14/16            & 3           & R2000            & \ph & \ph{} / \ph \\
+7  & IWM      & Tue, Thu & 2024-04-16/18            & 3           & S\&P\,500, N100   & \ph & \ph{} / \ph \\
+8+ & NDX, XSP & $^\dagger$ & $^\dagger$             & $^\dagger$  & $^\dagger$       & \ph & \ph{} / \ph \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} One row per listing event. $n_e$ is the number of weekday expirations per week before the event (Friday weeklies count as one). Control families are underlying families other than the treated one; products on the same index (e.g., SPX for an SPY event) are never used as controls because they are potential substitutes. Pre-event volume is the mean daily delta notional over the 60 pre-event sessions. Cells are defined by expiration weekday $\times$ days-to-expiration bucket $\times$ delta bucket $\times$ call/put. Listing dates for ETFs are from the existing paper's Table 1; $^\dagger$ marks dates and calendars to be verified against Cboe and Nasdaq notices. In events 3, 4 and 7, some control products had already listed the same weekdays (staggered treatment); estimates use stacked event windows.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} Which shocks identify the paper's results, and how do they differ?
+\item \textbf{Key column.} $n_e$, the density of the calendar before each listing. It varies from one to three and is the variable used in Table 4 to test whether new expirations reallocate more demand when the calendar is already dense.
+\item \textbf{Role in the argument.} Shows that identification does not rest on SPY alone: every ETF is treated at least once, and the staggered timing gives each family a turn as treated and as control.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 2: New Contracts' Share and Existing Volume}
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{threeparttable}
+\caption{New Contracts' Share and the Change in Existing Contracts' Volume}
+\begin{tabularx}{\textwidth}{P{4.6cm}*{7}{C}}
+\toprule
+ & 2016 & 2018 & 2021 & 2021 & 2022 & 2022     & 2024 \\
+ & SPY  & SPY  & QQQ  & IWM  & SPX  & SPY, QQQ & IWM \\
+\midrule
+\multicolumn{8}{l}{\textit{Panel A: Share of the treated product's volume in new contracts, weeks 1--12 (\%)}} \\
+Contracts        & 14.2 & 9.8  & \ph & \ph & \ph & 23.4 & \ph \\
+Delta notional   & \ph  & \ph  & \ph & \ph & \ph & \ph  & \ph \\
+Number of trades & 18.1 & 11.5 & \ph & \ph & \ph & 26.4 & \ph \\
+Premium (\$)     & 8.8  & 5.0  & \ph & \ph & \ph & 12.2 & \ph \\
+\midrule
+\multicolumn{8}{l}{\textit{Panel B: Existing and new volume, weeks 1--12 (\% of pre-event baseline)}} \\
+Existing, weekday baseline only & $-9.7$ & $-2.9$ & \ph & \ph & \ph & $-21.8$ & \ph \\
+Existing, control-adjusted      & \ph    & \ph    & \ph & \ph & \ph & \ph     & \ph \\
+                                & \phse  & \phse  & \phse & \phse & \phse & \phse & \phse \\
+New contracts                   & 15.0   & 10.6   & \ph & \ph & \ph & 23.9    & \ph \\
+Total, control-adjusted         & \ph    & \ph    & \ph & \ph & \ph & \ph     & \ph \\
+                                & \phse  & \phse  & \phse & \phse & \phse & \phse & \phse \\
+\midrule
+Pre-event weekly s.d.\ of existing volume (\%) & \ph & \ph & \ph & \ph & \ph & \ph & \ph \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Panel A reports the share of the treated product's option volume in contracts on the newly listed expiration weekdays, averaged over post-event weeks 1--12. Premium excludes deep in-the-money and no-delta trades. Panel B reports volume as a percentage of the weekday-matched pre-event baseline. ``Weekday baseline only'' compares each day with the pre-event mean on the same weekday. ``Control-adjusted'' additionally scales the baseline by the change in the control families' volume in the matching days-to-expiration bucket. Volumes in Panel B are in delta notional (black entries are contract counts from the existing report and will be replaced). Block-bootstrap standard errors (resampling trading days) in parentheses. The last row reports the standard deviation of weekly existing volume in the pre-event window, as a benchmark for normal fluctuations.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} How much volume do the new expirations attract, and how much do existing contracts lose?
+\item \textbf{Key rows.} ``Existing, control-adjusted'' against ``New contracts.'' If existing volume falls by about as much as the new contracts trade, the new volume is taken from existing contracts; if it barely moves, the new volume is additional.
+\item \textbf{Expected result.} New expirations reach a stable share within weeks. In 2022 existing volume falls nearly one-for-one with new volume; in 2016 and 2018 most new volume is additional. The control adjustment shows this is not a market-wide change.
+\item \textbf{Role in the argument.} Establishes the first fact: listings move trading across contracts, to a degree that differs across events. It motivates the question of how much is reallocated (Table 4) and from where (Tables 3 and 5).
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 3: Volume Losses and Nearest-Expiry Status}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Volume Losses and the Loss of Nearest-Expiry Status}
+\begin{tabularx}{\textwidth}{l*{4}{C}}
+\toprule
+ & (1)       & (2) & (3) & (4) \\
+ & All cells & ATM & OTM & ITM \\
+\midrule
+Post $\times$ Treat                    & \ph   & \ph   & \ph   & \ph \\
+                                       & \phse & \phse & \phse & \phse \\
+Post $\times$ Treat $\times$ $N_{j,t}$ & \ph   & \ph   & \ph   & \ph \\
+                                       & \phse & \phse & \phse & \phse \\
+\midrule
+Cell fixed effects                                   & Yes & Yes & Yes & Yes \\
+Family $\times$ DTE bucket $\times$ day fixed effects & Yes & Yes & Yes & Yes \\
+Events                                               & All & All & All & All \\
+Observations (cell-days)                             & \ph & \ph & \ph & \ph \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} The dependent variable is log delta-notional volume of existing cell $j$ on day $t$. The sample includes existing cells of treated and control families in stacked $\pm$60-session windows around each event. $N_{j,t} = 1$ if, under the pre-listing calendar, $j$'s expiration would be the nearest on day $t$ and a newly listed expiration is nearer on day $t$; i.e., $j$ loses its nearest-expiry status because of the listing. Columns (2)--(4) restrict to the at-the-money, out-of-the-money and in-the-money delta buckets. Standard errors two-way clustered by cell and day; randomization-inference $p$-values in the appendix. Event-by-event estimates are reported in the appendix.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} Is the loss of existing volume concentrated in the contracts and days where a new expiration takes over the ``nearest'' position?
+\item \textbf{Key coefficient.} Post $\times$ Treat $\times$ $N_{j,t}$. A negative and large coefficient means that existing contracts lose volume mainly on days when a new expiration becomes the nearest, not on their own expiration day.
+\item \textbf{Expected result.} Strongly negative, largest at the money (e.g., the 2022 Friday contracts lose about 40\% of their volume in the Thursday session, against about 14\% for IWM).
+\item \textbf{Role in the argument.} Turns the heat maps of the existing report into a single estimate. It establishes the second fact (investors appear to demand the nearest horizon) and raises the question the similarity analysis answers: is this about being close to the new contract, or about being first in line?
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 4: Reallocated Share $\lambda$}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Reallocated Share of New Volume and Calendar Density}
+\begin{tabularx}{\textwidth}{l*{6}{C}}
+\toprule
+\multicolumn{7}{l}{\textit{Panel A: Reallocated share $\lambda_e$ by event}} \\
+\midrule
+Event & $n_e$ & $\lambda$ (delta notional) & $\lambda$ (contracts) & $\lambda$ (premium \$) & Bootstrap s.e. & RI $p$-value \\
+\midrule
+SPY 2016 (Wed)          & 1           & \ph & \ph & \ph & \phse & \ph \\
+SPY 2018 (Mon)          & 2           & \ph & \ph & \ph & \phse & \ph \\
+QQQ 2021 (Mon, Wed)     & 1           & \ph & \ph & \ph & \phse & \ph \\
+IWM 2021 (Mon, Wed)     & 1           & \ph & \ph & \ph & \phse & \ph \\
+SPX 2022 (Tue, Thu)     & 3$^\dagger$ & \ph & \ph & \ph & \phse & \ph \\
+SPY/QQQ 2022 (Tue, Thu) & 3           & \ph & \ph & \ph & \phse & \ph \\
+IWM 2024 (Tue, Thu)     & 3           & \ph & \ph & \ph & \phse & \ph \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: $\lambda$ and calendar density, $\lambda_e = \Lambda(a + b\,n_e)$}} \\
+\midrule
+         & \multicolumn{2}{c}{$\hat a$} & \multicolumn{2}{c}{$\hat b$} & \multicolumn{2}{c}{Test: $b = 0$} \\
+Estimate & \multicolumn{2}{c}{\ph}      & \multicolumn{2}{c}{\ph}      & \multicolumn{2}{c}{$p =$ \ph} \\
+         & \multicolumn{2}{c}{\phse}    & \multicolumn{2}{c}{\phse}    & \multicolumn{2}{c}{} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} $\lambda_e = -\sum_j \Delta V_j / \sum_k V_k$ is the share of new-contract volume taken from existing contracts, where $\Delta V_j$ is existing cell $j$'s volume relative to the control-adjusted counterfactual, summed over post-event weeks 1--12, and $V_k$ is new cells' volume. $1 - \lambda_e$ is created demand. $\lambda = 1$: pure substitution; $\lambda = 0$: all new volume is additional; $\lambda < 0$: complementarity; $\lambda > 1$: total volume shrinks (fragmentation). Bootstrap standard errors resample trading-day blocks and recompute the counterfactual. RI $p$-value: share of placebo event dates with $|\hat\lambda|$ at least as large. In Panel B, $\Lambda$ is the logistic function, estimated by nonlinear least squares across events with bootstrap standard errors. For reference, the existing report's raw contract counts imply $\lambda \approx 0.65$ (2016), $0.27$ (2018) and $0.91$ (2022).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} After removing market-wide changes, what share of the new contracts' volume is reallocated from existing contracts, and what share is created?
+\item \textbf{Key estimates.} $\lambda_e$ for each event, and $\hat b$ in Panel B.
+\item \textbf{Expected result.} $\lambda$ rises with calendar density ($\hat b > 0$): when the calendar is sparse, a new expiration adds trading; when it is already dense, it mostly moves existing trading. The three-unit comparison shows whether reallocation is concentrated in cheap short-dated contracts (higher $\lambda$ in premium dollars than in delta notional).
+\item \textbf{Role in the argument.} Converts the original ``substitute or complement?'' question into a single number with a sign and size, and tests the model's prediction that the created share shrinks as the menu fills up. It also explains why the 2018 event shows no liquidity effect (Table 8): little demand was reallocated.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 5: Similarity and Volume Losses}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Similarity to the New Contracts and Existing Contracts' Volume Losses}
+\begin{tabularx}{\textwidth}{l*{5}{C}}
+\toprule
+ & (1)        & (2)        & (3)            & (4)              & (5) \\
+ & $N$ only   & $S$ only   & $S$ and $N$    & DiD, phantom $S$ & Cell-type FE \\
+\midrule
+Similarity $\bar S_{j,t}$         &       & \ph   & \ph   & \ph   & \ph \\
+                                  &       & \phse & \phse & \phse & \phse \\
+Nearest-expiry loss $N_{j,t}$     & \ph   &       & \ph   & \ph   & \ph \\
+                                  & \phse &       & \phse & \phse & \phse \\
+\midrule
+Day fixed effects                    & Yes & Yes & Yes & Yes & Yes \\
+Cell-type fixed effects              & No  & No  & No  & No  & Yes \\
+Control families (phantom similarity) & No  & No  & No  & Yes & Yes \\
+Observations (cell-days)             & \ph & \ph & \ph & \ph & \ph \\
+$R^2$                                & \ph & \ph & \ph & \ph & \ph \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Columns (1)--(3) and (5): the dependent variable is $y_{j,t} = (V_{j,t} - \hat V^{\mathrm{cf}}_{j,t})/\bar V^{\mathrm{pre}}_j$, existing cell $j$'s volume relative to the control-adjusted counterfactual, scaled by its pre-event mean; post-event days of treated products. $\bar S_{j,t}$ is the volume-weighted similarity of $j$ to the new cells trading on day $t$, with $S_{jk} = \exp(-\theta\, d_M^2(j,k))$ and $d_M$ the Mahalanobis distance on (log trading hours to expiration, $|\Delta|$), computed at a common volatility with a pre-event, volume-weighted, shrunk covariance matrix. $\theta$ is set to its estimate from Table 6, column (1); results with distance bins are in Figure X. Column (4): the dependent variable is $\log V_{j,t}$ in the stacked panel of treated and control families; the coefficients shown are on Post $\times$ Treat $\times \bar S$ and Post $\times$ Treat $\times N$, where control cells are assigned the similarity to a phantom contract on the weekday that was listed for the treated family. Cell type: DTE bucket $\times$ delta bucket $\times$ call/put. Regressions weighted by pre-event volume. Standard errors two-way clustered by cell and day.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} Do existing contracts lose more volume the more similar they are to the newly listed contracts?
+\item \textbf{Key coefficients.} The similarity coefficient (expected negative), and the change in the $N$ coefficient from column (1) to column (3).
+\item \textbf{Interpretation.} A negative similarity coefficient means new contracts draw demand from their closest substitutes. If the $N$ coefficient shrinks toward zero once similarity is included, the nearest-expiry pattern of Table 3 is explained by economic closeness. If it stays large, being first in line attracts demand beyond closeness, which points to salience or attention.
+\item \textbf{Role in the argument.} The core table. It replaces the scattered patterns of the heat maps (by weekday, maturity and moneyness) with one economic variable, and it generalizes the existing DDD by maturity bucket, which is a one-dimensional, discretized version of similarity. Column (4) shows the result is not a market-wide shift toward short maturities.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 6: What Do Investors Substitute On?}
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{threeparttable}
+\caption{Structural Diversion Model: Comparing Similarity Measures}
+\begin{tabularx}{\textwidth}{l*{5}{C}}
+\toprule
+ & (1)         & (2)          & (3)       & (4)      & (5) \\
+ & Mahalanobis & Mahalanobis  & Estimated & Tracking & Payoff + \\
+ & G1: terms   & G2: exposure & weights   & error    & non-payoff \\
+\midrule
+\multicolumn{6}{l}{\textit{Parameters}} \\
+$a$ (level of $\lambda$)         & \ph   & \ph   & \ph   & \ph   & \ph \\
+                                 & \phse & \phse & \phse & \phse & \phse \\
+$b$ (density slope of $\lambda$) & \ph   & \ph   & \ph   & \ph   & \ph \\
+                                 & \phse & \phse & \phse & \phse & \phse \\
+$\theta$ (bandwidth)             & \ph   & \ph   & \ph   & \ph   & \ph \\
+                                 & \phse & \phse & \phse & \phse & \phse \\
+$w_{\log\tau}$                   &       &       & \ph   &       & \ph \\
+$w_{|\Delta|}$                   &       &       & \ph   &       & \ph \\
+$w_{\log\tilde\Gamma}$           &       &       & \ph   &       & \\
+$w_{\log\Omega}$                 &       &       & \ph   &       & \\
+$w_{\log P^{\$}}$                &       &       &       &       & \ph \\
+$\gamma$ (nearest-expiry)        & \ph   & \ph   & \ph   & \ph   & \ph \\
+                                 & \phse & \phse & \phse & \phse & \phse \\
+\midrule
+\multicolumn{6}{l}{\textit{Fit}} \\
+In-sample weighted RMSE          & \ph & \ph & \ph & \ph & \ph \\
+Out-of-sample weighted RMSE      & \ph & \ph & \ph & \ph & \ph \\
+Out-of-sample rank correlation   & \ph & \ph & \ph & \ph & \ph \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Nonlinear least-squares estimates of $-\Delta V_{j,t} = \sum_k \lambda_e V_{k,t}\, S_{jk,t} / \sum_{j'} S_{j'k,t}$, with $S_{jk,t} = \exp(-\theta d^2_{jk,t} + \gamma N_{jk,t})$ and $\lambda_e = \Lambda(a + b\,n_e)$. Columns differ in the distance $d$: (1) Mahalanobis on (log trading hours, $|\Delta|$); (2) Mahalanobis on ($\log\Omega$, $\log\tilde\Gamma$, $\log\tilde\Theta$), with $\Omega = |\Delta|S/P$, $\tilde\Gamma = \Gamma S^2/P$, $\tilde\Theta = |\Theta|/P$; (3) weighted Euclidean distance on standardized characteristics with estimated non-negative weights summing to one; (4) per-dollar tracking error over a one-hour horizon; (5) tracking error plus a non-payoff block (log trading hours, $|\Delta|$ and log dollar premium entered as residual characteristics). All characteristics computed at a common volatility. Out-of-sample fit: parameters estimated on the 2016, 2018 and 2021 events; predictions evaluated on the 2022 and 2024 events. Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} What makes two option contracts substitutes in investors' eyes: contract terms (horizon and moneyness), exposure per dollar, or payoffs? And does the nearest-expiry position matter beyond economic similarity?
+\item \textbf{Key comparisons.} Out-of-sample fit across columns (1), (2) and (4) tells which geometry investors use. The weights in column (3) tell which dimension matters most. $\gamma$ across columns tests the salience effect. In column (5), the weights on the non-payoff characteristics show whether horizon, moneyness or price level matter beyond what they imply for payoffs.
+\item \textbf{Expected result.} Most of the explanatory power comes from horizon (or the exposure it implies); $\gamma > 0$ would indicate that being nearest attracts demand beyond closeness.
+\item \textbf{Role in the argument.} Provides the mechanism and the parameters that are later used to extrapolate beyond the event windows (Table 10).
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 7: Cross-Product Substitution}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Cross-Product Substitution: Index Options versus ETF Options}
+\begin{tabularx}{\textwidth}{l*{3}{C}}
+\toprule
+\multicolumn{4}{l}{\textit{Panel A: Diversion from existing contracts of other products (share of new volume)}} \\
+\midrule
+ & Same index & Different index & Difference \\
+\midrule
+Same design (ETF--ETF, index--index) & ---   & \ph   & \\
+                                     &       & \phse & \\
+Different design (ETF--index)        & \ph   & \ph   & \\
+                                     & \phse & \phse & \\
+Difference                           &       &       & \ph \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel B: Event-level diversion}} \\
+\midrule
+ & SPX $\rightarrow$ SPY & SPY $\rightarrow$ SPX & Asymmetry \\
+\midrule
+Diversion share                           & \ph   & \ph   & \ph \\
+                                          & \phse & \phse & \phse \\
+Diversion share, nearest-expiry days only & \ph   & \ph   & \ph \\
+                                          & \phse & \phse & \phse \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel C: Product-level distance parameters}} \\
+\midrule
+$\kappa_{\text{index design}}$ (cash, European, Sec.~1256) & \multicolumn{3}{c}{\ph{} \phse} \\
+$\kappa_{\text{PM settlement}}$                            & \multicolumn{3}{c}{\ph{} \phse} \\
+$\kappa_\rho$ (basis risk, $1 - \rho$)                    & \multicolumn{3}{c}{\ph{} \phse} \\
+$w_{\log P^{\$}}$ (contract size)                          & \multicolumn{3}{c}{\ph{} \phse} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Panel A reports the share of new-contract volume (in volatility-adjusted delta notional for different indices, delta notional for the same index) taken from existing contracts of \textit{other} products, by whether the products share the index and the design. Same index, different design: SPY--SPX, SPY--XSP, QQQ--NDX. Different index, same design: SPY--QQQ, SPX--NDX. Different index and design: SPY--NDX, QQQ--SPX. Panel B: ``SPX $\rightarrow$ SPY'' is the share of volume in SPX's new Tuesday and Thursday expirations (spring 2022$^\dagger$) taken from SPY's existing contracts; ``SPY $\rightarrow$ SPX'' is the share of SPY's new Tuesday and Thursday volume (November 2022) taken from SPX's existing contracts. Panel C reports the product-level terms of the cross-product distance $d^2 = d_M^2 + \sum_b \kappa_b \mathbf{1}\{b_j \neq b_k\} + \kappa_\rho (1 - \rho_{uv})$. Cash settlement, European exercise and Section 1256 treatment coincide across these products and are entered as one indicator. Block-bootstrap standard errors.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} When a new expiration appears, do investors move across products with the same index exposure, or do they stay within their product?
+\item \textbf{Key estimates.} Same-index, different-design diversion in Panel A; the asymmetry in Panel B; $\kappa$ in Panel C.
+\item \textbf{Interpretation.} Large same-index diversion means investors buy index exposure, not a ticker. Small diversion means clienteles are segmented by product design (size, settlement, tax, venue); then ``created'' demand in one product may be demand that left another. Asymmetry between SPX and SPY indicates which clientele (institutional or retail-leaning) moves. Near-zero different-index diversion supports the use of other families as controls (Table 9).
+\item \textbf{Role in the argument.} Extends the mechanism from maturities to products and connects the paper to the question of clientele segmentation across index and ETF options.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 8: Liquidity and Diversion}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Liquidity of Existing Contracts and the Intensity of Diversion}
+\begin{tabularx}{\textwidth}{l*{4}{C}}
+\toprule
+ & Quoted      & Effective   & Realized & Price \\
+ & half-spread & half-spread & spread   & impact \\
+\midrule
+\multicolumn{5}{l}{\textit{Panel A: Average effect (existing DiD, ATM)}} \\
+Post $\times$ Treated, 2016 & \ph   & \ph   & \ph   & \ph \\
+                            & \phse & \phse & \phse & \phse \\
+Post $\times$ Treated, 2018 & \ph   & \ph   & \ph   & \ph \\
+                            & \phse & \phse & \phse & \phse \\
+Post $\times$ Treated, 2022 & \ph   & \ph   & \ph   & \ph \\
+                            & \phse & \phse & \phse & \phse \\
+\midrule
+\multicolumn{5}{l}{\textit{Panel B: Continuous treatment intensity}} \\
+Post $\times$ Treated $\times$ $\widehat{D}_j$ (volume lost) & \ph   & \ph   & \ph   & \ph \\
+                                                            & \phse & \phse & \phse & \phse \\
+Post $\times$ Treated $\times$ $S_j$ (similarity)            & \ph   & \ph   & \ph   & \ph \\
+                                                            & \phse & \phse & \phse & \phse \\
+\midrule
+\multicolumn{5}{l}{\textit{Panel C: Pooled events, effect scaled by $\lambda_e$}} \\
+Post $\times$ Treated                         & \ph   & \ph   & \ph   & \ph \\
+                                              & \phse & \phse & \phse & \phse \\
+Post $\times$ Treated $\times$ $\hat\lambda_e$ & \ph   & \ph   & \ph   & \ph \\
+                                              & \phse & \phse & \phse & \phse \\
+\midrule
+Controls (incl.\ gamma and vega) & Yes & Yes & Yes & Yes \\
+Unit and date fixed effects      & Yes & Yes & Yes & Yes \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Trade-level regressions of half-spread measures (proportional, $\times$100) on existing contracts, $\pm$60 sessions around each event. Panel A reproduces the main DiD estimates of the existing paper for at-the-money options (Panel C specification: unit and date fixed effects, two-way clustered by unit and date); the existing paper reports relative narrowing of the quoted half-spread of about 7.8 bp (2016) and 6.2 bp (2022), and no effect in 2018. Panel B replaces the binary treatment with the cell-level estimated volume loss $\widehat{D}_j$ (share of pre-event volume lost, from Table 6, column (1)) and similarity to the new contracts $S_j$, both standardized; all moneyness and maturity buckets included. Panel C pools all events and interacts the treatment with the event's reallocated share $\hat\lambda_e$ from Table 4. Unit: underlying $\times$ option type $\times$ moneyness bucket $\times$ DTE bucket. Standard errors two-way clustered by unit and date; wild cluster bootstrap $p$-values in the appendix.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} Do existing contracts become less liquid when the new expirations take their volume away?
+\item \textbf{Key coefficients.} In Panel B, the coefficient on $\widehat{D}_j$ (fragmentation) and on $S_j$ (supply-side complementarity). In Panel C, the coefficient on $\hat\lambda_e$.
+\item \textbf{Interpretation.} If the coefficient on $\widehat{D}_j$ is close to zero, contracts that lose the most volume do not see wider spreads: liquidity is supplied for the whole option surface, so fragmentation concerns are overstated. If the coefficient on $S_j$ is negative, spreads improve most where the new contracts are the closest substitutes, consistent with market makers using adjacent expirations to hedge inventory. A significant $\hat\lambda_e$ interaction explains the 2018 null: little demand was reallocated, so liquidity did not change.
+\item \textbf{Role in the argument.} Reframes the existing liquidity results as a consequence of reallocation, and answers the original question in two parts: on the demand side, new expirations are substitutes; on the supply side, they are complements. It also replaces the claim that listings ``improve liquidity'' with one the evidence supports: existing contracts lose up to 40\% of their volume without a relative deterioration in liquidity.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 9: Control-Group Validity}
+
+\begin{table}[H]
+\centering\small
+\begin{threeparttable}
+\caption{Is the Control Group Affected by the Listings?}
+\begin{tabularx}{\textwidth}{l*{3}{C}}
+\toprule
+                & 2016      & 2022              & 2024 \\
+New expirations & SPY: Wed  & SPY, QQQ: Tue/Thu & IWM: Tue/Thu \\
+Control group   & QQQ + IWM & IWM               & SPY + QQQ \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel A: Control group's own change in ATM quoted half-spread (\%)}} \\
+Post (no fixed effects, HC1)                    & 0.057   & 0.062   & $-0.007$ \\
+                                                & (50.44) & (38.55) & ($-27.36$) \\
+Post (unit fixed effects)                       & 0.056   & 0.066   & $-0.002$ \\
+                                                & (3.14)  & (2.76)  & ($-0.17$) \\
+Post $\times$ Short (unit and date fixed effects) & \ph   & \ph     & \ph \\
+                                                & \phse   & \phse   & \phse \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel B: Diversion from control families' contracts}} \\
+Share of new volume taken from control families             & \ph   & \ph   & \ph \\
+                                                            & \phse & \phse & \phse \\
+Control families' volume change, high-similarity cells (\%) & \ph   & \ph   & \ph \\
+                                                            & \phse & \phse & \phse \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel C: Randomization inference}} \\
+Percentile of actual $\hat\lambda$ among placebo dates          & \ph & \ph & \ph \\
+Percentile of actual similarity coefficient among placebo dates & \ph & \ph & \ph \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Panel A uses only the control products of each event; Post measures the control group's own pre-to-post change in the at-the-money proportional quoted half-spread ($\times$100), with $t$-statistics in parentheses. Black entries are from the existing control-group report (Table 1 there); Post $\times$ Short is the change for 0--6 DTE relative to 7+ DTE options. The 2024 column is from an earlier build of the data pipeline. Panel B applies the structural diversion model to the control families' existing cells: the share of the treated family's new-contract volume taken from control-family contracts, and the volume change of control-family cells most similar (top quintile of cross-family similarity, including the basis-risk term) to the treated family's new contracts. Panel C reports the position of the actual estimates in the distribution of estimates from placebo event dates drawn from non-event periods.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} Are the control families affected by the treated family's listings, which would bias the difference-in-differences and counterfactual estimates?
+\item \textbf{Key estimates.} Panel A (existing): no maturity-concentrated deterioration in the control group, and no reaction of SPY and QQQ when IWM listed in 2024. Panel B (new): the estimated share of new volume taken from control families, expected to be close to zero; tracking-error similarity explains why, since basis risk across indices is magnified by the leverage of short-dated options.
+\item \textbf{Interpretation.} Turns the stable-unit assumption from a maintained hypothesis into an estimated quantity. It also documents a caveat already visible in the existing report: the control group's own movements account for much of the 2016 DiD, which is why the paper's liquidity claims are stated in relative terms.
+\item \textbf{Role in the argument.} Validates identification for Tables 2--8, and explains why products on the same index (e.g., SPX for SPY) are treated as substitutes and never as controls.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Table 10: Relabeling the 0DTE Boom}
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{threeparttable}
+\caption{How Much of 0DTE Trading Is Relabeled Nearest-Expiry Demand?}
+\begin{tabularx}{\textwidth}{ll*{5}{C}}
+\toprule
+\multicolumn{7}{l}{\textit{Panel A: Decomposition of 0DTE volume}} \\
+\midrule
+Product & Year & Observed 0DTE share (\%) & Counterfactual 0DTE share, Friday-only (\%) & Relabeled (\% of 0DTE volume) & Created (\% of 0DTE volume) & Bounds on relabeled \\
+\midrule
+SPY & 2016 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+SPY & 2019 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+SPY & 2024 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+QQQ & 2024 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+IWM & 2024 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+SPX & 2024 & \ph & \ph & \ph & \ph & [\ph, \ph] \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: Re-examining the 0DTE--volatility relation}} \\
+\midrule
+                         & & \multicolumn{2}{c}{Total 0DTE volume} & \multicolumn{3}{c}{Split by component} \\
+                         & & \multicolumn{2}{c}{(1)}               & \multicolumn{3}{c}{(2)} \\
+0DTE volume (total)      & & \multicolumn{2}{c}{\ph{} \phse}       & \multicolumn{3}{c}{} \\
+Relabeled 0DTE volume    & & \multicolumn{2}{c}{}                  & \multicolumn{3}{c}{\ph{} \phse} \\
+Created 0DTE volume      & & \multicolumn{2}{c}{}                  & \multicolumn{3}{c}{\ph{} \phse} \\
+Test: equal coefficients & & \multicolumn{2}{c}{}                  & \multicolumn{3}{c}{$p =$ \ph} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} Panel A: the counterfactual removes, in reverse chronological order, every expiration weekday listed after the Friday-only calendar. For each removed expiration, the created part $(1 - \hat\lambda_e)V_k$ is dropped and the reallocated part $\hat\lambda_e V_k$ is returned to existing cells in proportion to estimated similarity shares (Table 6, preferred column). ``Relabeled'' is the share of observed 0DTE volume that would have traded in another expiration under the Friday-only calendar; ``Created'' is the remainder. Bounds use the smallest and largest event-level $\hat\lambda_e$. Volumes in delta notional. Panel B: the dependent variable is 30-minute realized volatility of the underlying, with the HAR controls of the existing paper; 0DTE volume is split into its relabeled and created components using Panel A's decomposition. Standard errors clustered by day.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{tableshows}
+\item \textbf{Question.} How much of today's 0DTE trading would exist anyway as demand for the nearest expiration, had exchanges not expanded the calendar?
+\item \textbf{Key numbers.} The ``Relabeled'' column in Panel A (the paper's headline number), and the equal-coefficients test in Panel B.
+\item \textbf{Interpretation.} A large relabeled share means raw 0DTE volume overstates new short-horizon risk-taking. In Panel B, if only created 0DTE volume predicts volatility, the existing 0DTE literature is right but mismeasured; if relabeled volume predicts volatility equally, the ``0DTE effect'' is a short-horizon effect that predates daily listings.
+\item \textbf{Role in the argument.} Generalizes the event-window evidence to the whole sample using the parameters of Tables 4 and 6, and states the paper's implication for research and regulation on 0DTE options.
+\end{tableshows}
+
+% ---------------------------------------------------------------------------
+\clearpage
+\section*{Appendix Tables}
+
+\begin{enumerate}[label=A\arabic*.,itemsep=2pt]
+\item \textbf{Sample construction.} Data filters, trades retained at each step, by product and event (from the existing paper's data section).
+\item \textbf{Alternative volume units.} Tables 2, 4 and 5 with contract counts and premium dollars.
+\item \textbf{Alternative similarity definitions.} Table 5 with standardized moneyness $m$ instead of $|\Delta|$; own-contract implied volatilities; alternative kernels; finer and intraday cells; rolling covariance matrix.
+\item \textbf{Tracking-error horizon.} Table 6, column (4), with horizons of 15 minutes, end of day, and to the earlier expiration.
+\item \textbf{Event-by-event estimates.} Tables 3 and 5 by event.
+\item \textbf{Liquidity details.} Full DiD and DDD tables by maturity and moneyness; realized-spread and price-impact horizons; realized-volatility regression; mediation analysis (eight mediators, four channels).
+\item \textbf{Control-group details.} Full spillover tables of the existing control-group report (by DTE basket, short versus long, moneyness).
+\item \textbf{Inference.} Wild cluster bootstrap and randomization-inference $p$-values for the main coefficients.
+\end{enumerate}
+
+\end{document}
