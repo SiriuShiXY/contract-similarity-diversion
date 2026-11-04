@@ -1,0 +1,15 @@
+# Core estimation code only (whitelist). Everything else stays local: data/ (Cboe trade files, OptionMetrics/WRDS),
+# results/, overleaf/, logs/ (run scripts and logs), the report PDF/zip, __pycache__.
+/*
+!/.gitignore
+!/README.md
+!/*.py
+!/*.R
+# Helper scripts (figures, report tables, table shells, comparisons, lambda bridge) also stay local.
+/make_bin_figure.py
+/make_distance_map.py
+/make_placebo_figure.py
+/make_baseline_report.py
+/fill_table_shells.py
+/compare_variant.py
+/lambda_bridge.py
