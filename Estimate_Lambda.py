@@ -17,7 +17,7 @@ volume where a listed cell does not trade; Deep ITM cells included, their premiu
                                    pre-event day of that weekday: holiday-shifted expirations, panel.py)
     cf_jt   = base_jt x A_{b(j),t}, A = control families' volume in the matching DTE bucket relative to its
               weekday-matched pre-event mean (their total volume when the bucket is not listed for them)
-Sums over post-event weeks 1-12 (event time 1-59; day 0, the 2022 transition days and early closes out):
+Sums over post-event weeks 1-12 (event time 0-59, including day 0; transition days and early closes out):
     E = sum V_jt,  B = sum base_jt,  CF = sum cf_jt,  NEW = sum of the new cells' volume V_kt
     lambda = -(E - CF) / NEW          (design eq. 13; 1 - lambda = (E + NEW - CF) / NEW)
     lambda_raw = -(E - B) / NEW       (weekday baseline only: the design's 0.65 / 0.27 / 0.91 in contracts)
@@ -28,7 +28,7 @@ Panel A: share of the treated products' volume (all existing cells, including th
 cells, weeks 1-12, in contracts, delta notional, trades and premium.
 
 Block bootstrap (design 8.4; Table 4 notes): blocks of five consecutive sessions in event time (pre-event
-weeks -60..-56, ..., -5..-1; post weeks 1-5, ..., 56-59; day 0 its own block), resampled with replacement
+weeks -60..-56, ..., -5..-1; post weeks 0-4, ..., 55-59), resampled with replacement
 within the pre-event and within the post-event window; every draw recomputes the weekday-matched baselines,
 the control ratios, Counterfactual 1, Delta V and lambda.
 
@@ -48,7 +48,7 @@ BUCKETS = ["D0", "D1", "D2-6", "D7-30", "D31+"]
 CELL = ["underlying_symbol", "eff_wd", "dte_bucket", "delta_bucket", "option_type"]
 N_BOOT = 999
 SEED = 20261031
-BLOCKS_LAMBDA = {"w1-4": (1, 20), "w5-8": (21, 40), "w9-12": (41, 59)}
+BLOCKS_LAMBDA = {"w1-4": (0, 19), "w5-8": (20, 39), "w9-12": (40, 59)}
 
 
 @dataclass
@@ -91,15 +91,13 @@ def event_days(ev: str) -> pl.DataFrame:
 
 
 def with_blocks(d: pl.DataFrame) -> pl.DataFrame:
-    """Five-session blocks in event time: pre-event by rank from the window start, post-event day 0 = block 0,
-    weeks 1-12 = blocks 1-12 (tau 1-5, ..., 56-59)."""
+    """Five-session blocks: pre-event by rank from the window start; post-event
+    blocks 0-11 cover tau 0-4, ..., 55-59, including the event day."""
     t0 = d.filter(pl.col("period") == "pre")["tau"].min()
     return d.with_columns(
         pl.when(pl.col("period") == "pre")
         .then(-1 - (pl.col("tau") - t0) // 5)
-        .when(pl.col("tau") == 0)
-        .then(0)
-        .otherwise((pl.col("tau") - 1) // 5 + 1)
+        .otherwise(pl.col("tau") // 5)
         .alias("block")
     ).sort("trade_date")
 
@@ -198,7 +196,7 @@ def sums(
     """E, B, CF, NEW over the post-event days in day_mask (default weeks 1-12), for the given products."""
     D = win.T.shape[1]
     w = np.ones(D) if w is None else w
-    q = (win.tau >= 1) & (win.tau <= 59) & ~win.pre if day_mask is None else day_mask
+    q = (win.tau >= 0) & (win.tau <= 59) & ~win.pre if day_mask is None else day_mask
     qw = w * q
     prods = list(win.NEW) if products is None else products
     jm = np.isin(win.product, prods)
@@ -268,7 +266,7 @@ def event_inputs(ev: str) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
 def panel_a(ev: str, days: pl.DataFrame, grid: pl.DataFrame, new: pl.DataFrame) -> dict:
     """New cells' share of the treated products' volume, weeks 1-12 (all existing cells, cut cells included)."""
     q = days.filter(
-        (pl.col("tau") >= 1) & (pl.col("tau") <= 59) & (pl.col("period") == "post")
+        (pl.col("tau") >= 0) & (pl.col("tau") <= 59) & (pl.col("period") == "post")
     )["trade_date"].implode()
     tr = CFG[ev]["treated"]
     ex = grid.filter(

@@ -210,7 +210,8 @@ At each placebo date the event's statistic is recomputed with exactly the event 
 event's treated and control products, listed existing cells, weekday-matched baselines from the 60 placebo
 pre-event sessions, Counterfactual 1 with the control families' matching-DTE volume (2022 configuration:
 Monday/Wednesday 7-30 and 31+ DTE cells left out, as in the event), and the existing cells' change over
-placebo weeks 1-12 in % of the weekday baseline, x_p = 100 (E - CF) / B.  There are no new contracts at a
+placebo weeks 1-12 (tau 0-59, including the placebo date) in % of the weekday baseline,
+x_p = 100 (E - CF) / B.  There are no new contracts at a
 placebo date, so the placebo lambda divides by the actual event's new volume (same % of B):
     lambda_p = -x_p / new_pct_e,      RI p-value = share of placebo dates with |lambda_p| >= |lambda_e|
 (= share with |x_p| >= |x_e|: how often an ordinary 12-week window shows an existing-volume change, relative

@@ -437,7 +437,7 @@ def structural_main() -> None:
         menu = ed["menu"].with_columns(
             pl.Series("dV", (ed["menu"]["V"] - ed["menu"]["V_cf"]).fill_null(0))
         )
-        days = ed["days"].filter((pl.col("tau") >= 1) & (pl.col("tau") <= 59))[
+        days = ed["days"].filter((pl.col("tau") >= 0) & (pl.col("tau") <= 59))[
             "trade_date"
         ]
         inwk = menu["trade_date"].is_in(days.implode()).to_numpy() & ed["fit"]

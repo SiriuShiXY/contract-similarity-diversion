@@ -69,7 +69,7 @@ The reference input identities are recorded below so another researcher can conf
 | `vsurfd_30d_SPY_QQQ_IWM_2020_2025.csv` | `40614a813502eb78487907b60242fe5c45c45568600b0c362faf20dd8e3e075f` |
 | `sofr.csv` | `a084000f942369f41163e047076cdf34da1cf48cbc67d6b5f2cf4d61264917e1` |
 | `Dividends.xlsx` | `700103beb2dfb247912051adbc335f55972399d0bcbabec9aefb2d5975338f18` |
-| Table template | `a7138b1c0fde2703685e2b659af1146fd6b6154020d915bb90dbbbdab883c705` |
+| Table template | `467e22d48c537e3021f1c09654cbbf32a1d76b625042c77c7f20a4375dba662a` |
 
 The reference trade ZIP is 36,706,026,688 bytes and contains 3,348 non-directory members. Its inventory checksum is `ea8f78f8455f5867af49f233b134dc88545e94215d901b0363de2cbe61796d1e`, computed as SHA-256 of UTF-8 `json.dumps(sorted((i.filename, i.file_size, i.CRC) for i in zipfile.ZipFile(path).infolist() if not i.is_dir()), separators=(",", ":"))`. This identifies the archive inventory, not a SHA-256 of all archive bytes.
 
@@ -133,6 +133,8 @@ python Run_All.py --results-only
 
 This snapshot contains the approved **F02 effective-weekday calendar/profile correction**, including coefficient RI. Actual expiration dates remain the inputs to the trading-time and delta calculations.
 
+Table 4 event-level diversion now includes the event day: sessions `tau=0..59`. The three four-week segments cover `0..19`, `20..39`, and `40..59`. Table 2 uses the same aggregate volumes, and the new-weekday decomposition and lambda date placebos use the same post-event window. Post-event bootstrap blocks cover `0..4`, `5..9`, ..., `55..59`; the event day is resampled with the rest of its five-session block. Structural point estimation already used sessions `0..59`; its bootstrap now uses these aligned blocks as well.
+
 It reproduces the current baseline implementation. The remaining methodological audit findings have not been silently changed for publication. In particular:
 
 - Structural OOS initialization still uses a full-event free-lambda warm start (F04).
@@ -146,6 +148,8 @@ The production code does not import reference estimates or execute old-versus-ne
 
 ## Clean-run verification
 
-On 2026-11-04, the production tree was executed from the original raw inputs in a newly created Python virtual environment installed only from `requirements.txt`, using the pinned R packages and a fresh output directory. No precomputed panels, cached estimates, or legacy code were supplied. All eight stages completed, all 98 recorded output hashes verified, and the table shells compiled to a 13-page PDF. The run used 999 lambda bootstrap draws, 499 draws for each of the five structural versions, all eligible event-level date placebos, and 999 pooled coefficient-RI draws.
+Before the event-day correction, on 2026-11-04, the production tree was executed from the original raw inputs in a newly created Python virtual environment installed only from `requirements.txt`, using the pinned R packages and a fresh output directory. No precomputed panels, cached estimates, or legacy code were supplied. All eight stages completed, all 98 recorded output hashes verified, and the table shells compiled to a 13-page PDF. The run used 999 lambda bootstrap draws, 499 draws for each of the five structural versions, all eligible event-level date placebos, and 999 pooled coefficient-RI draws.
 
 Main displayed point estimates reproduced at their reported precision. Some long-tail bootstrap standard errors differed slightly between numerical environments; fixed seeds do not remove sensitivity to floating-point reductions and weakly identified nonlinear fits. Reproduction of the complete workflow is verified; byte-identical bootstrap estimates across executions/platforms are not asserted.
+
+The event-day correction was then verified on 2026-11-04 by rerunning all eight pipeline stages: event panels were rebuilt from the raw archive, and the unchanged full-sample source panels were reused. All 98 recorded output hashes passed validation. The run completed 999 lambda bootstrap draws, 499 valid draws for each structural version, all eligible lambda/coefficient RI dates, and a 13-page PDF whose Table 4 was rendered and visually checked. Seven local regression checks passed, including event-day contributions to both the loss numerator and new-volume denominator, complete four-week partitions, and five-session bootstrap blocks. The six event-level delta-notional lambdas are 1.072120, 0.574876, 0.506139, 0.339434, -0.095903, and -0.397740 in chronological order.
