@@ -589,38 +589,6 @@ def baseline_lambda_table() -> str:
             ("SPY/QQQ 2022", "2022-11-16", "2022"),
         )
     )
-    fit_rows = []
-    for label, term in (
-        ("Weighted RMSE", "rmse"),
-        ("No-loss benchmark RMSE", "rmse0"),
-    ):
-        fit_rows.append(
-            label + " & " + " & ".join(num(fits[v][term], 4) for v in versions)
-            + r" \\"
-        )
-        for version in versions:
-            records.append(
-                dict(
-                    version=version,
-                    lambda_form=forms[version],
-                    section="fit",
-                    term=term,
-                    event=None,
-                    n_e=None,
-                    estimate=fits[version][term],
-                    bootstrap_se=None,
-                    t_stat=None,
-                    normal_p_value=None,
-                    significance_stars=None,
-                    lambda_zero_boundary=None,
-                    n_boot=fits[version]["n_boot_ok"],
-                )
-            )
-    fit_rows.append(
-        "Valid bootstrap draws & "
-        + " & ".join(str(fits[v]["n_boot_ok"]) for v in versions)
-        + r" \\"
-    )
     body = r"""
 \clearpage
 \section*{Table 6B: Baseline Diversion Estimates}
@@ -644,9 +612,6 @@ Permitted range of $\lambda_e$ & $(0,1)$ & Unrestricted & Unrestricted \\
 \midrule
 \multicolumn{4}{l}{\textit{Panel B: Event-level diversion estimates}} \\
 @@EVENTS@@
-\midrule
-\multicolumn{4}{l}{\textit{Panel C: In-sample fit}} \\
-@@FIT@@
 \bottomrule
 \end{tabularx}
 \begin{tablenotes}
@@ -670,7 +635,8 @@ for a zero coefficient: $^{*}$, $^{**}$, $^{***}$ denote 10\%, 5\%, and 1\%.
 These stars do not use RI $p$-values.
 The explicitly labeled percentile row gives the 5th--95th percentile range for $\theta$.
 The bootstrap resamples five-session blocks separately before and after each event and re-estimates
-the covariance matrices, distances, and model parameters. Valid draw counts are shown in Panel C.
+the covariance matrices, distances, and model parameters.
+Valid bootstrap draws: @@BOOTSTRAP_COUNTS@@.
 $^\dagger$ L restricts $\lambda_e$ to $(0,1)$; its $\lambda_e$ stars are only the displayed
 normal-approximation Wald calculation. Because zero is a boundary value, they are not a
 regular test of $\lambda_e=0$. No structural RI test has been computed.
@@ -686,7 +652,10 @@ weighted pattern of cell-level losses. Out-of-sample results are reported separa
         ("@@PARAMETERS@@", parameters),
         ("@@INTERVALS@@", intervals),
         ("@@EVENTS@@", event_rows),
-        ("@@FIT@@", "\n".join(fit_rows)),
+        (
+            "@@BOOTSTRAP_COUNTS@@",
+            ", ".join(f"{v}={fits[v]['n_boot_ok']}" for v in versions),
+        ),
     ):
         assert body.count(marker) == 1
         body = body.replace(marker, replacement)
