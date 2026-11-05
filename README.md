@@ -111,6 +111,9 @@ data/                   Generated event and full-sample panels
 results/                Numerical estimates and bootstrap/RI draws
 table_shells/main.tex    Filled table-shell source
 table_shells/main.pdf    Compiled table shells
+table_shells/baseline_lambda_models.pdf  Standalone Table 6B
+table_shells/baseline_lambda_models.tex  Self-contained LaTeX source for Table 6B
+table_shells/baseline_lambda_models.csv  Table 6B estimates and bootstrap standard errors
 manifest.json           Stage status and hashes of generated outputs
 settings.json           Settings, event definitions and resolved input paths
 runtime_context.json    Paths supplied to the standalone stages
@@ -153,3 +156,5 @@ Before the event-day correction, on 2026-11-04, the production tree was executed
 Main displayed point estimates reproduced at their reported precision. Some long-tail bootstrap standard errors differed slightly between numerical environments; fixed seeds do not remove sensitivity to floating-point reductions and weakly identified nonlinear fits. Reproduction of the complete workflow is verified; byte-identical bootstrap estimates across executions/platforms are not asserted.
 
 The event-day correction was then verified on 2026-11-04 by rerunning all eight pipeline stages: event panels were rebuilt from the raw archive, and the unchanged full-sample source panels were reused. All 98 recorded output hashes passed validation. The run completed 999 lambda bootstrap draws, 499 valid draws for each structural version, all eligible lambda/coefficient RI dates, and a 13-page PDF whose Table 4 was rendered and visually checked. Seven local regression checks passed, including event-day contributions to both the loss numerator and new-volume denominator, complete four-week partitions, and five-session bootstrap blocks. The six event-level delta-notional lambdas are 1.072120, 0.574876, 0.506139, 0.339434, -0.095903, and -0.397740 in chronological order.
+
+Table 6B reports only the baseline Mahalanobis G1 similarity, comparing logistic (L), identity (I), and free-event (F) diversion specifications. Each column reports its own parameters, event-level lambdas and in-sample fit; F has no a/b parameters. Square brackets contain bootstrap standard errors, and the theta percentile range is labeled separately. No lambda significance stars or structural RI p-values are assigned. The table is generated from existing structural outputs by Make_Results.py and is also exported as a standalone PDF, LaTeX file and CSV. The combined PDF now has 14 pages, with Table 6B on page 8; the standalone table has one page. All 31 exported numerical entries matched structural_estimates.csv exactly, and seven local checks passed. Numerical estimation code, inputs and outputs were unchanged by this reporting addition.

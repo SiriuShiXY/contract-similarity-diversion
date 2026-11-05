@@ -7,8 +7,9 @@ import sys
 
 # Fill Table Shells
 """
-Fill the table shells (Table_Shells_Overleaf) with the baseline estimates (design steps 2-6): Tables 1-5, Table 6
-column (1) and Table 9 Panel C.  Reads the pipeline's outputs (results/, data/) and the untouched shell
+Fill the table shells with the baseline estimates: Tables 1-5, Table 6 column (1),
+Table 6B (baseline similarity, alternative lambda specifications), and Table 9 Panel C.
+Reads the pipeline's outputs (results/, data/) and the untouched shell
 (Table_Shells_Overleaf/main_shell_template.tex) and writes Table_Shells_Overleaf/main.tex.  Cells the baseline does not
 cover keep their grey placeholders; notes are amended where the estimates differ from the shell's plan (fixed effects,
 placebo dates, sample).  Every replacement checks that the shell text it replaces occurs exactly once.
@@ -511,6 +512,183 @@ def table9(sh: Shell) -> None:
     )
 
 
+def baseline_lambda_table() -> str:
+    """Report the three full-sample fits at the same baseline similarity."""
+    estimates = rd("structural_estimates.csv")
+    versions = ("L", "I", "F")
+    fits = {v: row(estimates, version=v) for v in versions}
+    forms = {"L": "logistic", "I": "identity", "F": "free"}
+    records = []
+
+    def estimate_rows(label, term, section, digits=3, event=None):
+        values, errors = [], []
+        for version in versions:
+            fit = fits[version]
+            value = fit.get(term)
+            if value is None:
+                values.append(NA)
+                errors.append("")
+                continue
+            error = fit["se_" + term]
+            values.append(num(value, digits))
+            errors.append(f"[{error:.{digits}f}]")
+            records.append(
+                dict(
+                    version=version,
+                    lambda_form=forms[version],
+                    section=section,
+                    term=term,
+                    event=event,
+                    n_e=EVENT_SPEC[event]["n_e"] if event else None,
+                    estimate=value,
+                    bootstrap_se=error,
+                    n_boot=fit["n_boot_ok"],
+                )
+            )
+        return (
+            label + " & " + " & ".join(values) + r" \\"
+            + "\n & " + " & ".join(errors) + r" \\"
+        )
+
+    parameters = "\n".join(
+        estimate_rows(label, term, "parameters")
+        for label, term in (
+            (r"$a$ (level)", "a"),
+            (r"$b$ (calendar-density slope)", "b"),
+            (r"$\theta$ (bandwidth)", "theta"),
+            (r"$\gamma$ (nearest-expiry)", "gamma"),
+        )
+    )
+    intervals = (
+        r"$\theta$: bootstrap 5th--95th percentiles & "
+        + " & ".join(
+            f"{fits[v]['p05_theta']:.2f}--{fits[v]['p95_theta']:.2f}"
+            for v in versions
+        )
+        + r" \\"
+    )
+    event_rows = "\n".join(
+        estimate_rows(
+            label + f" ($n_e={EVENT_SPEC[event]['n_e']}$)",
+            "lam_" + key,
+            "event_lambda",
+            digits=4,
+            event=event,
+        )
+        for label, event, key in (
+            ("SPY 2016", "2016-08-30", "2016"),
+            ("SPY 2018", "2018-02-16", "2018"),
+            ("QQQ 2021", "2021-04-27", "2021QQQ"),
+            ("IWM 2021", "2021-10-08", "2021IWM"),
+            ("SPY/QQQ 2022", "2022-11-16", "2022"),
+        )
+    )
+    fit_rows = []
+    for label, term in (
+        ("Weighted RMSE", "rmse"),
+        ("No-loss benchmark RMSE", "rmse0"),
+    ):
+        fit_rows.append(
+            label + " & " + " & ".join(num(fits[v][term], 4) for v in versions)
+            + r" \\"
+        )
+        for version in versions:
+            records.append(
+                dict(
+                    version=version,
+                    lambda_form=forms[version],
+                    section="fit",
+                    term=term,
+                    event=None,
+                    n_e=None,
+                    estimate=fits[version][term],
+                    bootstrap_se=None,
+                    n_boot=fits[version]["n_boot_ok"],
+                )
+            )
+    fit_rows.append(
+        "Valid bootstrap draws & "
+        + " & ".join(str(fits[v]["n_boot_ok"]) for v in versions)
+        + r" \\"
+    )
+    body = r"""
+\clearpage
+\section*{Table 6B: Baseline Diversion Estimates}
+\begingroup
+\renewcommand{\thetable}{6B}
+\renewcommand{\theHtable}{baseline-lambda-models}
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\begin{threeparttable}
+\caption{Baseline Mahalanobis Similarity: Alternative Diversion Specifications}
+\begin{tabularx}{\textwidth}{l*{3}{C}}
+\toprule
+ & Logistic L & Identity I & Free F \\
+$\lambda_e$ specification & $\Lambda(a+b n_e)$ & $a+b n_e$ & Event-specific \\
+Permitted range of $\lambda_e$ & $(0,1)$ & Unrestricted & Unrestricted \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel A: Model-specific parameters}} \\
+@@PARAMETERS@@
+@@INTERVALS@@
+\midrule
+\multicolumn{4}{l}{\textit{Panel B: Event-level diversion estimates}} \\
+@@EVENTS@@
+\midrule
+\multicolumn{4}{l}{\textit{Panel C: In-sample fit}} \\
+@@FIT@@
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item[] \textit{Notes:} All three columns use the same baseline similarity:
+Mahalanobis distance on log remaining trading hours and $|\Delta|$, with common-volatility
+characteristics and a pre-event, volume-weighted, shrunk covariance matrix.
+The columns differ only in the parameterization of $\lambda_e$ and are fitted separately:
+each has its own $\theta$ and $\gamma$; L and I also have their own $a$ and $b$.
+$\Lambda$ is the logistic function. F estimates one unrestricted $\lambda_e$ per event,
+so $a$ and $b$ do not apply. Within each column, $\theta$ and $\gamma$ are shared across events.
+\item[] All entries are full-sample, in-sample estimates using the five ETF events of 2016--2022
+and post-event sessions $\tau=0,\ldots,59$ (early closes excluded).
+IWM 2024 has no structural fit. Deep ITM cells are excluded from the structural choice set and
+new volume; cells affected by the 2022 expiration cut are excluded from the fit.
+$n_e$ is the number of regular expiration weekdays before the event.
+L and I imply identical $\lambda_e$ for events with the same $n_e$; those rows are not independent estimates.
+\item[] Square brackets below estimates contain block-bootstrap standard errors;
+the explicitly labeled percentile row gives the 5th--95th percentile range for $\theta$.
+The bootstrap resamples five-session blocks separately before and after each event and re-estimates
+the covariance matrices, distances, and model parameters. Valid draw counts are shown in Panel C.
+No significance stars or RI $p$-values are assigned here. L restricts $\lambda_e$ to $(0,1)$,
+so positivity or a positive bootstrap percentile bound is not by itself a test of $\lambda_e=0$.
+Table 4 reports the separate aggregate-volume ratio; these structural estimates fit the
+weighted pattern of cell-level losses. Out-of-sample results are reported separately in Table 6.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\addtocounter{table}{-1}
+\endgroup
+"""
+    for marker, replacement in (
+        ("@@PARAMETERS@@", parameters),
+        ("@@INTERVALS@@", intervals),
+        ("@@EVENTS@@", event_rows),
+        ("@@FIT@@", "\n".join(fit_rows)),
+    ):
+        assert body.count(marker) == 1
+        body = body.replace(marker, replacement)
+    pl.DataFrame(records, infer_schema_length=None).write_csv(
+        SHELL / "baseline_lambda_models.csv"
+    )
+    preamble = (SHELL / "main_shell_template.tex").read_text().split(
+        r"\begin{document}", 1
+    )[0]
+    (SHELL / "baseline_lambda_models.tex").write_text(
+        preamble + "\n" + r"\begin{document}" + "\n" + body
+        + "\n" + r"\end{document}" + "\n"
+    )
+    return body
+
+
 def fill_table_shells_main() -> None:
     sh = Shell((SHELL / "main_shell_template.tex").read_text())
     sh.sub(
@@ -519,10 +697,26 @@ def fill_table_shells_main() -> None:
     )
     sh.sub(
         "The tables follow the paper's chain of argument. Grey \\ph{} entries are placeholders. Numbers in black are taken from the existing reports (\\textit{Existing and New Contracts after the Weekly-Expiration Listings} and \\textit{Is the Control Group Affected by the New Expirations?}) and must be recomputed under the new definitions (delta notional, control-family adjustment) before use. Entries marked $^\\dagger$ must be verified against exchange notices.",
-        "The tables follow the paper's chain of argument. Black entries in Tables 1--6 and in Panel C of Table 9 are the baseline estimates (design steps 2--6: the five ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them.",
+        "The tables follow the paper's chain of argument. Black entries in Tables 1--6, Table 6B and Panel C of Table 9 are the baseline estimates (design steps 2--6: the five ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them. Table 6B compares logistic, identity and free-event diversion at baseline similarity, with bootstrap standard errors in square brackets.",
     )
     for fn in (table1, table2, table3, table4, table5, table6, table9):
         fn(sh)
+    overview_row = (
+        "6  & 3. Mechanism           & Do investors substitute on contract terms, "
+        "exposure, or payoffs? Is there a salience effect? & New \\\\"
+    )
+    sh.sub(
+        overview_row,
+        overview_row
+        + "\n6B & 3. Mechanism & How does the diversion estimate change across "
+        "logistic, identity and free-event specifications at baseline similarity? & New \\\\",
+    )
+    sh.sub(
+        "\\begin{table}[H]\n\\small\n\\begin{tabularx}{\\textwidth}{clLl}",
+        "\\begin{table}[H]\n\\footnotesize\n\\begin{tabularx}{\\textwidth}{clLl}",
+    )
+    next_table = r"\clearpage" + "\n" + r"\section*{Table 7: Cross-Product Substitution}"
+    sh.sub(next_table, baseline_lambda_table() + "\n" + next_table)
     (SHELL / "main.tex").write_text(sh.text())
     print("wrote", SHELL / "main.tex")
 
@@ -535,24 +729,29 @@ def run(paths, cfg, log):
 
     shutil.copy2(paths.shell_template, paths.shell_file("main_shell_template.tex"))
     invoke(paths, log, "Make_Results", "fill_table_shells")
-    for _ in range(3):
-        proc = subprocess.run(
-            [
-                paths.executable("pdflatex"),
-                "-interaction=nonstopmode",
-                "-halt-on-error",
-                "main.tex",
-            ],
-            cwd=paths.shells,
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode:
-            raise RuntimeError(proc.stdout[-5000:])
+    for stem in ("main", "baseline_lambda_models"):
+        for _ in range(3):
+            proc = subprocess.run(
+                [
+                    paths.executable("pdflatex"),
+                    "-interaction=nonstopmode",
+                    "-halt-on-error",
+                    stem + ".tex",
+                ],
+                cwd=paths.shells,
+                capture_output=True,
+                text=True,
+            )
+            if proc.returncode:
+                raise RuntimeError(proc.stdout[-5000:])
     return [
         paths.shell_file("main.tex"),
         paths.shell_file("main.pdf"),
         paths.shell_file("main.log"),
+        paths.shell_file("baseline_lambda_models.tex"),
+        paths.shell_file("baseline_lambda_models.pdf"),
+        paths.shell_file("baseline_lambda_models.csv"),
+        paths.shell_file("baseline_lambda_models.log"),
     ]
 
 
