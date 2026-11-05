@@ -256,7 +256,7 @@ def table2(sh: Shell) -> None:
         "Volumes in Panel B are in delta notional (black entries are contract counts from the existing report and will be replaced). Block-bootstrap standard errors (resampling trading days) in parentheses.",
         "Volumes in Panel B are in delta notional. $t$-statistics in parentheses: the estimate over its block-bootstrap standard error (five-session blocks resampled within the pre- and post-event windows, counterfactual recomputed; 999 draws). "
         + BSTAR_NOTE
-        + " Contracts, delta notional and trades count every trade. 2022 SPX: no index option data; 2024 IWM is shown in Tables 1 and 2 and in Panel A of Table 4 only.",
+        + " Contracts, delta notional and trades count every trade. 2022 SPX: no index option data; All six ETF events through IWM 2024 enter the event-level and pooled analysis.",
     )
 
 
@@ -346,13 +346,11 @@ def table4(sh: Shell) -> None:
         + "\n"
         + f"         & \\multicolumn{{2}}{{c}}{{{tv(dn['a_lin'], dn['se_a_lin'])}}} & \\multicolumn{{2}}{{c}}{{{tv(dn['b_lin'], dn['se_b_lin'])}}} & \\multicolumn{{2}}{{c}}{{}} \\\\",
     )
-    n_pl = (
-        ", ".join(
-            (f"{row(ri, event=ev)['n_placebo']:,}".replace(",", "{,}") for ev in EVENTS)
-        )
-        + "; IWM 2024: all "
-        + f"{row(ri, event='2024-04-18')['n_placebo']:,}".replace(",", "{,}")
-        + ", each before 2024"
+    n_pl = "; ".join(
+        EVENT_SPEC[ev]["short"]
+        + ": "
+        + f"{row(ri, event=ev)['n_placebo']:,}".replace(",", "{,}")
+        for ev in EVENTS
     )
     sh.sub(
         "RI $p$-value: share of placebo event dates with $|\\hat\\lambda|$ at least as large.",
@@ -362,7 +360,7 @@ def table4(sh: Shell) -> None:
     )
     sh.sub(
         "In Panel B, $\\Lambda$ is the logistic function, estimated by nonlinear least squares across events with bootstrap standard errors.",
-        "In Panel B, $\\Lambda$ is the logistic function, estimated by nonlinear least squares across events with bootstrap standard errors (999 draws) on the five events of 2016--2022 (IWM 2024 is in Panel A only); with $\\lambda_{2016}>1$ and $\\lambda_{2022}<0$ it saturates, so the identity $\\Lambda$ (linear least squares) is also shown. $p$: bootstrap test of $b=0$; RI $p$: share of 999 random draws of one placebo date per event with a slope at least as large in absolute value. All figures in parentheses are $t$-statistics, the estimate over its bootstrap standard error (Panel A: $\\lambda$ in delta notional, null $\\lambda=0$). Stars on $\\lambda$ (delta notional), $\\hat a$ and $\\hat b$: two-sided normal approximation to these $t$-statistics, 10\\%, 5\\%, 1\\%; the randomization inference is the test across windows.",
+        "In Panel B, $\\Lambda$ is the logistic function, estimated by nonlinear least squares across events with bootstrap standard errors (999 draws) on all six events of 2016--2024. Event-level ratios can lie outside $[0,1]$, so the identity $\\Lambda$ (linear least squares) is also shown. $p$: bootstrap test of $b=0$; RI $p$: share of 999 random draws of one placebo date per event with a slope at least as large in absolute value. All figures in parentheses are $t$-statistics, the estimate over its bootstrap standard error (Panel A: $\\lambda$ in delta notional, null $\\lambda=0$). Stars on $\\lambda$ (delta notional), $\\hat a$ and $\\hat b$: two-sided normal approximation to these $t$-statistics, 10\\%, 5\\%, 1\\%; the randomization inference is the test across windows.",
     )
 
 
@@ -436,7 +434,9 @@ def table5(sh: Shell) -> None:
 
 def table6(sh: Shell) -> None:
     s = rd("structural_estimates.csv")
-    L, O = (row(s, version="L"), row(s, version="L_oos"))
+    L = row(s, version="L")
+    O = row(s, version="L_oos_2022")
+    O24 = row(s, version="L_oos_2024IWM")
 
     def first(line_: str, value: str) -> str:
         """Replace the first placeholder of a shell row (column 1)."""
@@ -477,38 +477,53 @@ def table6(sh: Shell) -> None:
     ]:
         i = sh._find(lambda l, p=prefix: l.startswith(p))
         sh.lines[i] = first(sh.lines[i], value)
+        if prefix == "Out-of-sample weighted RMSE":
+            sh.lines[i] = sh.lines[i].replace(prefix, "2022 test: weighted RMSE", 1)
+        elif prefix == "Out-of-sample rank correlation":
+            sh.lines[i] = sh.lines[i].replace(prefix, "2022 test: rank correlation", 1)
+    i = sh._find(lambda l: l.startswith("2022 test: rank correlation"))
+    sh.lines[i] += (
+        "\n2024 test: weighted RMSE & "
+        + f"{O24['rmse_oos']:.3f} [{O24['rmse0_oos']:.3f}]"
+        + r" & \ph & \ph & \ph & \ph \\"
+        + "\n2024 test: rank correlation & "
+        + f"{bstar(O24['rank_corr_oos'], O24['se_rank_corr_oos'])} "
+        + tv(O24["rank_corr_oos"], O24["se_rank_corr_oos"])
+        + r" & \ph & \ph & \ph & \ph \\"
+    )
     sh.sub(
         "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors.",
-        "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors. Column (1) is the baseline, with $t$-statistics in parentheses and stars from their two-sided normal approximation (10\\%, 5\\%, 1\\%): the estimate over its block-bootstrap standard error (499 draws, each re-estimating $\\Sigma_p$ and the distances); for $\\theta$ the bootstrap 5th and 95th percentiles in brackets (its bootstrap distribution has a long right tail); RMSE of $y$ with the no-loss RMSE in brackets; out of sample: estimated on 2016, 2018 and the two 2021 events, evaluated on 2022 only (IWM 2024 is not estimated). The model's choice set and new volume exclude Deep ITM cells, which have no characteristics.",
+        "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors. Column (1) is the baseline, with $t$-statistics in parentheses and stars from their two-sided normal approximation (10\\%, 5\\%, 1\\%): the estimate over its block-bootstrap standard error (499 draws, each re-estimating $\\Sigma_p$ and the distances); for $\\theta$ the bootstrap 5th and 95th percentiles in brackets (its bootstrap distribution has a long right tail); RMSE of $y$ with the no-loss RMSE in brackets; in-sample parameters use all six events. The 2022 and 2024 tests both use parameters estimated only on 2016, 2018 and the two 2021 events, with initialization selected only from those training events. The model's choice set and new volume exclude Deep ITM cells, which have no characteristics.",
     )
 
 
 def table9(sh: Shell) -> None:
     ri = rd("lambda_ri.csv", event=pl.Utf8).filter(pl.col("unit") == "V")
     br = rd("beta_ri.csv").filter((pl.col("spec") == "t5_3") & (pl.col("term") == "S"))
-    lam = [f"{row(ri, event=e)['pctile']:.0f}" for e in ("2016-08-30", "2022-11-16")]
-    beta = [f"{row(br, event=e)['pctile']:.1f}" for e in ("2016-08-30", "2022-11-16")]
+    reported = ("2016-08-30", "2022-11-16", "2024-04-18")
+    lam = [f"{row(ri, event=e)['pctile']:.0f}" for e in reported]
+    beta = [f"{row(br, event=e)['pctile']:.1f}" for e in reported]
     sh.line(
         "Percentile of actual $\\hat\\lambda$ among placebo dates",
         "Percentile of actual $\\hat\\lambda$ among placebo dates          & "
         + " & ".join(lam)
-        + f" & {NA} "
         + "\\\\",
     )
     sh.line(
         "Percentile of actual similarity coefficient among placebo dates",
         "Percentile of actual similarity coefficient among placebo dates & "
         + " & ".join(beta)
-        + f" & {NA} "
         + "\\\\",
     )
-    n16, n22 = (row(ri, event=e)["n_placebo"] for e in ("2016-08-30", "2022-11-16"))
+    n16, n22, n24 = (row(ri, event=e)["n_placebo"] for e in reported)
     sh.sub(
         "Panel C reports the position of the actual estimates in the distribution of estimates from placebo event dates drawn from non-event periods.",
         "Panel C reports the position of the actual estimates in the distribution of estimates from placebo event dates drawn from non-event periods: baseline, pre-event placebo dates ("
         + f"{n16} for 2016, whose windows overlap almost entirely; "
         + f"{n22:,}".replace(",", "{,}")
-        + " for 2022); percentile = share of placebo estimates at or below the actual one; the similarity coefficient is that of eq.~(17) with $N$, on the calendar similarity. 2024 is not estimated.",
+        + " for 2022; "
+        + f"{n24:,}".replace(",", "{,}")
+        + " for 2024); percentile = share of placebo estimates at or below the actual one; the similarity coefficient is that of eq.~(17) with $N$, on the calendar similarity.",
     )
 
 
@@ -587,6 +602,7 @@ def baseline_lambda_table() -> str:
             ("QQQ 2021", "2021-04-27", "2021QQQ"),
             ("IWM 2021", "2021-10-08", "2021IWM"),
             ("SPY/QQQ 2022", "2022-11-16", "2022"),
+            ("IWM 2024", "2024-04-18", "2024IWM"),
         )
     )
     body = r"""
@@ -623,9 +639,9 @@ The columns differ only in the parameterization of $\lambda_e$ and are fitted se
 each has its own $\theta$ and $\gamma$; L and I also have their own $a$ and $b$.
 $\Lambda$ is the logistic function. F estimates one unrestricted $\lambda_e$ per event,
 so $a$ and $b$ do not apply. Within each column, $\theta$ and $\gamma$ are shared across events.
-\item[] All entries are full-sample, in-sample estimates using the five ETF events of 2016--2022
+\item[] All entries are full-sample, in-sample estimates using the six ETF events of 2016--2024
 and post-event sessions $\tau=0,\ldots,59$ (early closes excluded).
-IWM 2024 has no structural fit. Deep ITM cells are excluded from the structural choice set and
+Deep ITM cells are excluded from the structural choice set and
 new volume; cells affected by the 2022 expiration cut are excluded from the fit.
 $n_e$ is the number of regular expiration weekdays before the event.
 L and I imply identical $\lambda_e$ for events with the same $n_e$; those rows are not independent estimates.
@@ -680,7 +696,7 @@ def fill_table_shells_main() -> None:
     )
     sh.sub(
         "The tables follow the paper's chain of argument. Grey \\ph{} entries are placeholders. Numbers in black are taken from the existing reports (\\textit{Existing and New Contracts after the Weekly-Expiration Listings} and \\textit{Is the Control Group Affected by the New Expirations?}) and must be recomputed under the new definitions (delta notional, control-family adjustment) before use. Entries marked $^\\dagger$ must be verified against exchange notices.",
-        "The tables follow the paper's chain of argument. Black entries in Tables 1--6, Table 6B and Panel C of Table 9 are the baseline estimates (design steps 2--6: the five ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them. Table 6B compares logistic, identity and free-event diversion at baseline similarity, with t-statistics in parentheses and stars from a two-sided normal approximation; its notes identify the logistic boundary restriction.",
+        "The tables follow the paper's chain of argument. Black entries in Tables 1--6, Table 6B and Panel C of Table 9 are the baseline estimates (design steps 2--6: the six ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them. Table 6B compares logistic, identity and free-event diversion at baseline similarity, with t-statistics in parentheses and stars from a two-sided normal approximation; its notes identify the logistic boundary restriction.",
     )
     for fn in (table1, table2, table3, table4, table5, table6, table9):
         fn(sh)

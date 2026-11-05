@@ -27,6 +27,8 @@ WINSOR_Q = (0.0025, 0.9975)
 ATM_DTE = (7, 120)
 ATM_MIN_TRADES = 10
 TARGET_DAYS = 30
+CALENDAR_START = datetime.date(2015, 1, 1)
+CALENDAR_END = datetime.date(2030, 12, 31)
 
 EVENT_SPEC = {
     "2016-08-30": {
@@ -112,9 +114,17 @@ EVENT_SPEC = {
         "label": "2024: IWM adds Tue/Thu",
         "short": "2024 IWM",
         "tab": "IWM 2024 (Tue, Thu)",
-        "tables_only": True,
     },
 }
+
+# Held-out events never enter fitting or initialization of prediction parameters.
+OOS_TRAIN_EVENTS = (
+    "2016-08-30",
+    "2018-02-16",
+    "2021-04-27",
+    "2021-10-08",
+)
+OOS_TEST_EVENTS = ("2022-11-16", "2024-04-18")
 
 SETTINGS = {"lambda_draws": 999, "structural_draws": 499, "full_panel_workers": 8}
 
@@ -142,6 +152,10 @@ if _context:
             "ATM_DTE",
             "ATM_MIN_TRADES",
             "TARGET_DAYS",
+            "CALENDAR_START",
+            "CALENDAR_END",
+            "OOS_TRAIN_EVENTS",
+            "OOS_TEST_EVENTS",
         ):
             if _name in _custom:
                 globals()[_name] = _custom[_name]

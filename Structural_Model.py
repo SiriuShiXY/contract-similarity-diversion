@@ -28,16 +28,16 @@ Versions: (L) lambda_e = logistic(a + b n_e) (Table 6 col. 1, Table 4 Panel B); 
 (the unrestricted alternative of Section 8.2; given theta and gamma it is concentrated out by weighted least
 squares); (I) lambda_e = a + b n_e (Lambda = identity, which allows lambda outside [0, 1]).
 Fit: in-sample weighted RMSE of y = dV / Vbar_pre (and of the no-loss prediction for scale).  Out of sample
-(Section 8.3; IWM 2024 has no OptionMetrics volatility): (L) and (I) estimated on 2016, 2018 and the 2021
-QQQ and IWM events predict 2022 with lambda_2022 = Lambda(a + 3b): weighted RMSE and the rank (Spearman) correlation between predicted
+(Section 8.3): (L) and (I) estimated only on 2016, 2018 and the two 2021
+QQQ and IWM events predict both 2022 and IWM 2024 with lambda = Lambda(a + 3b): weighted RMSE and the rank (Spearman) correlation between predicted
 and realized cell-level losses (cell = product x expiration weekday x DTE bucket x delta bucket x type;
 loss = mean over post-event days of -y, predicted mean of the model's -dV_hat / Vbar_pre).
 
 Block bootstrap (8.4): per event, five-session blocks resampled with replacement within the pre- and the
 post-event window (lambda_est.boot_weights); each draw recomputes the weekday baselines, Counterfactual 1, y,
 Vbar_pre, Sigma_p (with its shrinkage) and the distances, and re-estimates every version.
-Also: Table 4 Panel B, lambda_e = logistic(a + b n_e) fitted by NLS to the three event-level lambdas of
-Table 4 Panel A (lambda_est.py), with the same fit on each of its bootstrap draws; and lambda by new weekday
+Also: Table 4 Panel B, lambda_e = logistic(a + b n_e) fitted by NLS to the six event-level lambdas of
+Table 4 Panel A, with the same fit on each of its bootstrap draws; and lambda by new weekday
 (2022: Tuesday vs Thursday) with each existing cell-day's Delta V attributed to the new weekdays in
 proportion to the model's predicted diversion from them.
 
@@ -71,6 +71,7 @@ from Estimate_Lambda import (
 )
 from Measure_Similarity import mahalanobis_X, shrunk_cov
 from Build_Event_Panel import CFG
+from config import OOS_TRAIN_EVENTS, OOS_TEST_EVENTS
 
 N_E = {ev: s["n_e"] for ev, s in EVENT_SPEC.items()}
 KEY = {ev: s["short"].replace(" ", "") for ev, s in EVENT_SPEC.items()}
@@ -323,8 +324,9 @@ def predict(ed: dict, theta: float, gamma: float, lam: float) -> np.ndarray:
         return lam * G_of(ed, theta, gamma) / ed["Vpre"]
 
 
-def oos(version: str, train: list[dict], test: dict, start=None) -> dict:
-    f = fit(version, train, start)
+def oos(version: str, train: list[dict], test: dict, fitted: dict) -> dict:
+    """Evaluate parameters already estimated using only the training events."""
+    f = fitted
     lam = float(lam_of(version, [f["a"], f["b"]], [test])[0])
     m = predict(test, f["theta"], f["gamma"], lam)
     k = test["fit"] & (test["w"] > 0)
@@ -346,12 +348,15 @@ def oos(version: str, train: list[dict], test: dict, start=None) -> dict:
     )
     rho = float(spearmanr(cl["loss"], cl["pred"]).statistic)
     return dict(
-        version=f"{version}_oos",
+        version=f"{version}_oos_{KEY[test['ev']]}",
+        prediction_event=test["ev"],
+        training_events=";".join(ed["ev"] for ed in train),
         theta=f["theta"],
         gamma=f["gamma"],
         a=f["a"],
         b=f["b"],
-        lam_2022_pred=lam,
+        lam_pred=lam,
+        **{f"lam_{KEY[test['ev']]}_pred": lam},
         **{k: v for k, v in f.items() if k.startswith("lam_")},
         rmse_oos=float(np.sqrt((w * r * r).sum() / w.sum())),
         rmse0_oos=float(np.sqrt((w * test["y"][k] ** 2).sum() / w.sum())),
@@ -367,8 +372,28 @@ def all_fits(eds: list[dict], start=None) -> list[dict]:
     rows.append(fF)
     for v in ("L", "I"):
         rows.append(fit(v, eds, st))
+    by_event = {ed["ev"]: ed for ed in eds}
+    train_ids, test_ids = tuple(OOS_TRAIN_EVENTS), tuple(OOS_TEST_EVENTS)
+    if (
+        not train_ids
+        or not test_ids
+        or len(set(train_ids)) != len(train_ids)
+        or len(set(test_ids)) != len(test_ids)
+        or set(train_ids) & set(test_ids)
+        or not set(train_ids + test_ids) <= set(by_event)
+    ):
+        raise ValueError("Specify non-overlapping, available OOS training and test events")
+    if max(EVENT_SPEC[e]["day0"] for e in train_ids) >= min(
+        EVENT_SPEC[e]["day0"] for e in test_ids
+    ):
+        raise ValueError("All OOS training events must precede the test events")
+    train = [by_event[e] for e in train_ids]
+    train_free = fit("F", train)
+    train_start = [np.log(train_free["theta"]), train_free["gamma"]]
     for v in ("L", "I"):
-        rows.append(oos(v, eds[:-1], eds[-1], st))
+        trained = fit(v, train, train_start)
+        for event in test_ids:
+            rows.append(oos(v, train, by_event[event], trained))
     return rows
 
 

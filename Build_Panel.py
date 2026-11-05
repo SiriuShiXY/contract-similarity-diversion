@@ -77,6 +77,8 @@ from config import (
     ATM_DTE,
     ATM_MIN_TRADES,
     TARGET_DAYS,
+    CALENDAR_START,
+    CALENDAR_END,
 )
 import math
 import os
@@ -105,9 +107,9 @@ RES_DIR = PATHS.results
 EV_DIR = PATHS.events
 SYMBOLS = ["SPY", "QQQ", "IWM"]
 EVENT_SPEC = ORIGINAL_EVENTS
-EVENTS = [ev for ev, s in EVENT_SPEC.items() if not s.get("tables_only")]
-TABLE_EVENTS = list(EVENT_SPEC)
-BUILD_EVENTS = TABLE_EVENTS if not VARIANT else EVENTS
+EVENTS = list(EVENT_SPEC)
+TABLE_EVENTS = EVENTS
+BUILD_EVENTS = EVENTS
 INCOMPLETE_DAYS = {date(2021, 9, 29)}
 COLS = [
     "underlying_symbol",
@@ -162,7 +164,9 @@ CELL = [
 SIGMA_SOURCE = "optionmetrics"
 OM_FILES = PATHS.optionmetrics_files
 OM_SECID = {109820: "SPY", 107899: "QQQ", 106445: "IWM"}
-_sch = mcal.get_calendar("NYSE").schedule("2015-01-01", "2025-12-31")
+_sch = mcal.get_calendar("NYSE").schedule(
+    CALENDAR_START.isoformat(), CALENDAR_END.isoformat()
+)
 _close = _sch["market_close"].dt.tz_convert("America/New_York")
 SESSIONS = [d.date() for d in _sch.index]
 SESSION_IDX = {d: i for i, d in enumerate(SESSIONS)}
@@ -171,6 +175,11 @@ CUM_HOURS = np.cumsum([(c.hour * 60 + c.minute - 570) / 60 for c in _close])
 
 
 def last_session(d: date) -> date:
+    if d < CALENDAR_START or d > CALENDAR_END:
+        raise ValueError(
+            f"{d} is outside the configured trading calendar "
+            f"({CALENDAR_START} to {CALENDAR_END}); extend its bounds in config.py"
+        )
     while d not in SESSION_IDX:
         d -= timedelta(1)
     return d

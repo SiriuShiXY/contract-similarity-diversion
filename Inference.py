@@ -38,6 +38,9 @@ import polars as pl
 from Build_Panel import archive_days_all
 from Build_Panel import (
     ARCHIVE,
+    CALENDAR_START,
+    CALENDAR_END,
+    CLOSED,
     CLOSE_MIN,
     DELTA_BUCKETS,
     DELTA_SOURCE,
@@ -58,9 +61,10 @@ SPEC = dict(
     delta_source=DELTA_SOURCE,
     delta_buckets=DELTA_BUCKETS,
     sigma_source=SIGMA_SOURCE,
+    calendar_start=CALENDAR_START.isoformat(),
+    calendar_end=CALENDAR_END.isoformat(),
 )
 START, END = (date(2016, 1, 6), date(2023, 12, 29))
-CLOSED = {date(2015, 1, 1) + timedelta(i) for i in range(4018)} - set(SESSION_IDX)
 
 
 def effective_weekday(d: date, sym: str) -> int:
@@ -204,7 +208,7 @@ Pre-event placebo dates (design 8.4, "placebo event dates in pre-event periods";
 of placebo_beta.py): each event uses only the dates whose whole window lies before the event's new weekday was listed
 for the treated ETFs (2022: before the 2022-11-10 cut); for 2018 also after SPY's Wednesday listing (2016-08-30), so
 that the placebo windows have the event's pre-event calendar.  2016: 45 dates, 2018: 244, 2021 QQQ and IWM: 819 each,
-2022: 972; IWM 2024 (Table 2 only): all.
+2022: 972; IWM 2024: all eligible pre-event dates in the 2016--2023 panel.
 
 At each placebo date the event's statistic is recomputed with exactly the event code (lambda_est.py): the
 event's treated and control products, listed existing cells, weekday-matched baselines from the 60 placebo
@@ -218,8 +222,8 @@ placebo date, so the placebo lambda divides by the actual event's new volume (sa
 to the control-adjusted counterfactual, as large as the event's).  Also reported: the percentile of lambda_e
 in the placebo distribution (Table 9 Panel C), and the same for the weekday-baseline-only version.
 
-Density slope (Table 4 Panel B; an addition): 999 random triples of placebo dates, one per event, give placebo
-lambdas for the three events; their slope on n_e (identity Lambda, OLS) forms the null distribution of b.
+Density slope (Table 4 Panel B; an addition): 999 random sets of placebo dates, one per event, give placebo
+lambdas for the six events; their slope on n_e (identity Lambda, OLS) forms the null distribution of b.
 
 Usage: python placebo.py
 Output: results/placebo_lambda.parquet (one row per placebo date x configuration x unit),
