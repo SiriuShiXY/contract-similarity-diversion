@@ -15,12 +15,11 @@ and the outcome y_{j,t}.
 Grid.  An expiration is listed on day t if its first trade in the window (ListingDynamics
 expirations.csv) is on or before t and its last trading session is on or after t.  A cell (product x
 effective expiration weekday x DTE bucket x new/existing) exists on day t if one of its expirations is
-listed; it is crossed with the five delta buckets (Deep OTM, OTM, ATM, ITM, Deep ITM; four with
-SIM_VARIANT=no_ditm) and call/put.  Sessions: pre, post and the 2022 transition days; early closes are dropped.
+listed; it is crossed with all five delta buckets (Deep OTM, OTM, ATM, ITM, Deep ITM) and call/put.  Sessions: pre, post and the 2022 transition days; early closes are dropped.
 
 Characteristics of cell-days with no trade in 09:55-15:45 (V_char = 0): the cell's mean over its
 pre-event cell-days on the same weekday, else over all its pre-event cell-days, else over all its
-cell-days (flag x_imputed).  Deep ITM cells never have characteristics (design 3.6; x stays null).
+cell-days (flag x_imputed). Deep ITM cells use the same characteristic and imputation rules as other cells.
 
 N_{j,t} = 1 for the existing cell that holds the nearest expiration of the pre-listing calendar (the
 nearest existing expiration) when a listed new expiration expires earlier on day t (treated products).

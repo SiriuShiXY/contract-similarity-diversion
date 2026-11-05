@@ -16,7 +16,7 @@ sessions missing in the event windows).  The span is set by the baseline inputs:
 ATM IV (common volatility) 2016-01-04 to 2023-12-29, OIS curve from 2016-01-06.
 
 Per session, exactly the event panels' per-day code (build_cells.cells_for_day: trade filters, trading-hour
-clock, common-volatility delta, delta notional, characteristics, Deep ITM cells without characteristics) with every expiration
+clock, common-volatility delta, delta notional and characteristics including Deep ITM) with every expiration
 classified by the weekday it stands for (ListingDynamics rule: Saturday-dated -> Friday, Tuesday after a
 Monday holiday -> Monday, Thursday before a Friday holiday -> Friday; added here, for SPY: Tuesday before a
 Wednesday holiday -> Wednesday, which the event windows do not contain) and is_new = False (no listing
@@ -63,6 +63,7 @@ SPEC = dict(
     sigma_source=SIGMA_SOURCE,
     calendar_start=CALENDAR_START.isoformat(),
     calendar_end=CALENDAR_END.isoformat(),
+    deep_itm_characteristics=True,
 )
 START, END = (date(2016, 1, 6), date(2023, 12, 29))
 
@@ -695,10 +696,7 @@ def placebo_sample(ev: str, i: int) -> pl.DataFrame:
     c = counterfactual(win)
     post = days.filter(pl.col("period") == "post")
     ex = (
-        g.filter(
-            pl.col("underlying_symbol").is_in(cfg["treated"])
-            & (pl.col("delta_bucket") != "DITM")
-        )
+        g.filter(pl.col("underlying_symbol").is_in(cfg["treated"]))
         .join(
             placebo_beta__G["cells"]
             .filter(pl.col("trade_date").is_between(lo, hi))
@@ -822,7 +820,7 @@ def placebo_sample(ev: str, i: int) -> pl.DataFrame:
         cal.select("underlying_symbol", "trade_date", "eff_wd_k", "dte_bucket_k")
         .unique()
         .join(
-            pl.DataFrame({"delta_bucket_k": ["DOTM", "OTM", "ATM", "ITM"]}), how="cross"
+            pl.DataFrame({"delta_bucket_k": DELTA}), how="cross"
         )
         .join(pl.DataFrame({"option_type": ["C", "P"]}), how="cross")
         .with_columns(pl.col("trade_date").dt.weekday().alias("wd"))

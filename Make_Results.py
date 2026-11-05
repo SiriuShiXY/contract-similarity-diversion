@@ -69,6 +69,26 @@ def rd(name: str, **over) -> pl.DataFrame:
     return pl.read_csv(RES / name, schema_overrides=over or None)
 
 
+def structural_bootstrap_note(versions=("L", "I", "F")) -> str:
+    """Distinguish returned bootstrap fits from optimizer convergence."""
+    draws = pl.read_parquet(RES / "structural_boot.parquet")
+    counts, unfinished = [], []
+    for version in versions:
+        sample = draws.filter(pl.col("version") == version)
+        converged = sample.filter(pl.col("success") == True).height
+        counts.append(f"{version}={converged}/{sample.height}")
+        if converged < sample.height:
+            unfinished.append(f"{sample.height - converged} {version}")
+    note = "Full-sample bootstrap optimizer convergence: " + ", ".join(counts) + "."
+    if unfinished:
+        note += (
+            " Standard errors use all returned draws, including "
+            + " and ".join(unfinished)
+            + " draws without reported convergence; inference for these full-sample fits is provisional."
+        )
+    return note
+
+
 def row(df: pl.DataFrame, **eq) -> dict:
     for k, v in eq.items():
         df = df.filter(pl.col(k) == v)
@@ -189,7 +209,7 @@ def table1(sh: Shell) -> None:
     )
     sh.sub(
         "Listing dates for ETFs are from the existing paper's Table 1; $^\\dagger$ marks dates and calendars to be verified against Cboe and Nasdaq notices.",
-        "Listing dates of the ETF events are the first trades in the Cboe trade files; those of SPX (SPXW), NDX (NDXP) and XSP are first trading days from exchange notices (Cboe C2022030800 and C2022050401; Nasdaq Options Trader Alert 2022-26; Cboe C2022091900); each of the three already had Monday, Wednesday and Friday expirations. Event 7 is shown in Tables 1 and 2 and in Panel A of Table 4 only. Baseline estimates: events 1--4 and 6.",
+        "Listing dates of the ETF events are the first trades in the Cboe trade files; those of SPX (SPXW), NDX (NDXP) and XSP are first trading days from exchange notices (Cboe C2022030800 and C2022050401; Nasdaq Options Trader Alert 2022-26; Cboe C2022091900); each of the three already had Monday, Wednesday and Friday expirations. All six ETF events (1--4, 6 and 7) enter the baseline estimates.",
     )
 
 
@@ -295,7 +315,7 @@ def table3(sh: Shell) -> None:
     )
     sh.sub(
         "Standard errors two-way clustered by cell and day; randomization-inference $p$-values in the appendix.",
-        "Fixed effects as estimated: cell, ETF $\\times$ day and DTE bucket $\\times$ day, the last common to an event's treated and control ETFs. The coefficient therefore compares, within the same DTE bucket and day, treated cells that lose nearest-expiry status with the control cells in the same calendar position. The planned family $\\times$ DTE bucket $\\times$ day effects would absorb it: in the treated post-event sample $N_{j,t}$ is constant within every such group in 2016, 2021 IWM and 2022, and varies in one group in 2021 QQQ and twelve in 2018. Deep ITM cells (no characteristics) are not in the sample; zero-volume cell-days dropped; weighted by pre-event volume. $t$-statistics in parentheses, from standard errors two-way clustered by cell and day; $^{*}$, $^{**}$, $^{***}$: 10\\%, 5\\%, 1\\%; randomization-inference $p$-values in the appendix.",
+        "Fixed effects as estimated: cell, ETF $\\times$ day and DTE bucket $\\times$ day, the last common to an event's treated and control ETFs. The coefficient therefore compares, within the same DTE bucket and day, treated cells that lose nearest-expiry status with the control cells in the same calendar position. The planned family $\\times$ DTE bucket $\\times$ day effects would absorb it: in the treated post-event sample $N_{j,t}$ is constant within every such group in 2016, 2021 IWM and 2022, and varies in one group in 2021 QQQ and twelve in 2018. All five delta buckets, including Deep ITM, are included; zero-volume cell-days dropped; weighted by pre-event volume. $t$-statistics in parentheses, from standard errors two-way clustered by cell and day; $^{*}$, $^{**}$, $^{***}$: 10\\%, 5\\%, 1\\%; randomization-inference $p$-values in the appendix.",
     )
 
 
@@ -428,7 +448,7 @@ def table5(sh: Shell) -> None:
         "Regressions weighted by pre-event volume. Standard errors two-way clustered by cell and day.",
         "Here $\\hat\\theta="
         + f"{th:.1f}"
-        + "$. Day fixed effects are ETF $\\times$ day; column (4) adds cell and DTE bucket $\\times$ day effects (the latter common to treated and control ETFs). Column (5) adds cell-type effects to column (3) on the treated products only (the shell's header lists control families for it); the design's eq.~(17) itself includes the cell-type effects. Deep ITM cells (no characteristics) are not in the samples. Regressions weighted by pre-event volume. $t$-statistics in parentheses, from standard errors two-way clustered by cell and day; $^{*}$, $^{**}$, $^{***}$: 10\\%, 5\\%, 1\\%.",
+        + "$. Day fixed effects are ETF $\\times$ day; column (4) adds cell and DTE bucket $\\times$ day effects (the latter common to treated and control ETFs). Column (5) adds cell-type effects to column (3) on the treated products only (the shell's header lists control families for it); the design's eq.~(17) itself includes the cell-type effects. All five delta buckets, including Deep ITM, are included. Regressions weighted by pre-event volume. $t$-statistics in parentheses, from standard errors two-way clustered by cell and day; $^{*}$, $^{**}$, $^{***}$: 10\\%, 5\\%, 1\\%.",
     )
 
 
@@ -493,7 +513,8 @@ def table6(sh: Shell) -> None:
     )
     sh.sub(
         "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors.",
-        "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors. Column (1) is the baseline, with $t$-statistics in parentheses and stars from their two-sided normal approximation (10\\%, 5\\%, 1\\%): the estimate over its block-bootstrap standard error (499 draws, each re-estimating $\\Sigma_p$ and the distances); for $\\theta$ the bootstrap 5th and 95th percentiles in brackets (its bootstrap distribution has a long right tail); RMSE of $y$ with the no-loss RMSE in brackets; in-sample parameters use all six events. The 2022 and 2024 tests both use parameters estimated only on 2016, 2018 and the two 2021 events, with initialization selected only from those training events. The model's choice set and new volume exclude Deep ITM cells, which have no characteristics.",
+        "Rank correlation is between predicted and realized cell-level losses. Block-bootstrap standard errors. Column (1) is the baseline, with $t$-statistics in parentheses and stars from their two-sided normal approximation (10\\%, 5\\%, 1\\%): the estimate over its block-bootstrap standard error (499 draws, each re-estimating $\\Sigma_p$ and the distances); for $\\theta$ the bootstrap 5th and 95th percentiles in brackets (its bootstrap distribution has a long right tail); RMSE of $y$ with the no-loss RMSE in brackets; in-sample parameters use all six events. The 2022 and 2024 tests both use parameters estimated only on 2016, 2018 and the two 2021 events, with initialization selected only from those training events. The covariance matrices, similarity measures, structural choice set, new volume and eligible fit cells include Deep ITM; their characteristics use the same trade-based averages as other delta buckets. "
+        + structural_bootstrap_note(("L",)),
     )
 
 
@@ -641,8 +662,9 @@ $\Lambda$ is the logistic function. F estimates one unrestricted $\lambda_e$ per
 so $a$ and $b$ do not apply. Within each column, $\theta$ and $\gamma$ are shared across events.
 \item[] All entries are full-sample, in-sample estimates using the six ETF events of 2016--2024
 and post-event sessions $\tau=0,\ldots,59$ (early closes excluded).
-Deep ITM cells are excluded from the structural choice set and
-new volume; cells affected by the 2022 expiration cut are excluded from the fit.
+All five delta buckets, including Deep ITM, enter the covariance matrices, structural choice set,
+new volume and eligible fit cells. Characteristics use trade-based averages for every delta bucket;
+only premium volume excludes Deep ITM. Cells affected by the 2022 expiration cut are excluded from the fit.
 $n_e$ is the number of regular expiration weekdays before the event.
 L and I imply identical $\lambda_e$ for events with the same $n_e$; those rows are not independent estimates.
 \item[] Parentheses below estimates contain $t$-statistics: the estimate divided by its
@@ -652,7 +674,7 @@ These stars do not use RI $p$-values.
 The explicitly labeled percentile row gives the 5th--95th percentile range for $\theta$.
 The bootstrap resamples five-session blocks separately before and after each event and re-estimates
 the covariance matrices, distances, and model parameters.
-Valid bootstrap draws: @@BOOTSTRAP_COUNTS@@.
+Bootstrap draws used: @@BOOTSTRAP_COUNTS@@. @@CONVERGENCE_NOTE@@
 $^\dagger$ L restricts $\lambda_e$ to $(0,1)$; its $\lambda_e$ stars are only the displayed
 normal-approximation Wald calculation. Because zero is a boundary value, they are not a
 regular test of $\lambda_e=0$. No structural RI test has been computed.
@@ -668,6 +690,7 @@ weighted pattern of cell-level losses. Out-of-sample results are reported separa
         ("@@PARAMETERS@@", parameters),
         ("@@INTERVALS@@", intervals),
         ("@@EVENTS@@", event_rows),
+        ("@@CONVERGENCE_NOTE@@", structural_bootstrap_note()),
         (
             "@@BOOTSTRAP_COUNTS@@",
             ", ".join(f"{v}={fits[v]['n_boot_ok']}" for v in versions),

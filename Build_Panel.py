@@ -51,16 +51,15 @@ Per cell-day: volume over all trades (delta notional |delta| x S x 100 x size at
 contracts, trades; design 2.3) and premium excluding deep-ITM trades (shell Table 2 notes; premium_all keeps
 them), and characteristics over the liquidity window 09:55-15:45: delta-notional-weighted means of log tau_h
 and |delta| (contract-weighted versions kept as robustness), after winsorizing both at 0.25% / 99.75% within
-product x DTE bucket x day.  Deep-ITM trades are left out of the characteristics (design 3.6), so Deep ITM
-cells have volume but no characteristics: they enter the volume tables, lambda and the control volume, not
-the distances.  (Until 2026-11-02 deep-ITM trades were dropped altogether; SIM_VARIANT=no_ditm.)
+product x DTE bucket x day. Deep ITM trades enter characteristic averages and every model sample,
+including the similarity choice set and new volume. Only premium excludes Deep ITM. This implements
+the user's specified sample, extending the characteristic-average cleaning rule in design 3.6.
 
 Robustness (design 3.2, own implied volatilities; user's choice 2026-11-01): SIM_VARIANT=vendor_delta takes
 |delta| from Cboe's trade delta (trade_delta, at the contract's own implied volatility trade_iv) for the delta
 bucket, the delta notional and the |delta| characteristic; trades without one (trade_iv <= 0 or delta 0) are
 dropped (design 3.6).  Every pipeline output then goes under data/robustness/vendor_delta/ and
-results/robustness/vendor_delta/.  SIM_VARIANT=no_ditm drops deep-ITM trades from every volume measure (the
-baseline until 2026-11-02, kept as a robustness check).
+results/robustness/vendor_delta/.
 
 Usage: python build_cells.py [event ...]          (SIM_VARIANT=vendor_delta python build_cells.py: robustness)
 Output: data/<event>/cells.parquet, data/<event>/sigbar.csv
@@ -98,10 +97,9 @@ RAW_DIR = PATHS.raw_dir
 RAW_DATA = PATHS.raw_data
 ARCHIVE = PATHS.archive
 VARIANT = ""
-assert VARIANT in ("", "vendor_delta", "no_ditm"), f"unknown SIM_VARIANT {VARIANT!r}"
+assert VARIANT in ("", "vendor_delta"), f"unknown SIM_VARIANT {VARIANT!r}"
 DELTA_SOURCE = "vendor" if VARIANT == "vendor_delta" else "common"
-DROP_DITM = VARIANT == "no_ditm"
-DELTA_BUCKETS = ["DOTM", "OTM", "ATM", "ITM"] + ([] if DROP_DITM else ["DITM"])
+DELTA_BUCKETS = ["DOTM", "OTM", "ATM", "ITM", "DITM"]
 OUT_DIR = PATHS.data
 RES_DIR = PATHS.results
 EV_DIR = PATHS.events
@@ -544,13 +542,8 @@ def cells_for_day(
         .alias("dte_bucket"),
         (pl.col("absd") * pl.col("S") * 100 * pl.col("trade_size")).alias("dn"),
         pl.col("tau_h").log().alias("logtau"),
-        (
-            pl.col("tmin").is_between(*CHAR_WINDOW)
-            & (delta_bucket(pl.col("absd")) != "DITM")
-        ).alias("char"),
+        pl.col("tmin").is_between(*CHAR_WINDOW).alias("char"),
     )
-    if DROP_DITM:
-        df = df.filter(pl.col("delta_bucket") != "DITM")
     wgrp = ["underlying_symbol", "dte_bucket"]
     caps = (
         df.filter(pl.col("char"))

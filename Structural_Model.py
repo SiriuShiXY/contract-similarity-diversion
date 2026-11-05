@@ -19,8 +19,8 @@ puts separately, design 11.1); d: Mahalanobis distance on (log trading hours, |d
 volatility) with the pre-event, volume-weighted, shrunk Sigma_p of the product and type (mahalanobis.py);
 N: nearest-expiry indicator (panel.py).  The choice set in the denominators is every listed existing cell of
 the product and type that day (2022 Monday/Wednesday 7-30 and 31+ DTE cells included as sources, left out of
-the fit, design 7.4) except the Deep ITM cells, which have no characteristics (design 3.6): neither existing
-Deep ITM cells nor new Deep ITM volume enter the model.  dV_jt = V_jt - V_cf_jt (Counterfactual 1, panel.py); fit sample = existing cells of the
+the fit, design 7.4). All five delta buckets, including Deep ITM, enter the existing choice set,
+new volume and fit under the same eligibility rules.  dV_jt = V_jt - V_cf_jt (Counterfactual 1, panel.py); fit sample = existing cells of the
 treated products on post-event days (day 0-59, early closes out) with a counterfactual and Vbar_pre > 0, the
 regression sample of eq. 8.
 

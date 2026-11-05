@@ -34,8 +34,8 @@ Regressors per existing cell-day:
              bins [0, .5), [.5, 1), [1, 1.5), [1.5, 2), [2, 3), [3, inf) in M-units (version ii, an addition
              to the design).
 Regression sample (in_reg): existing cells of the treated ETFs on post-event days with a counterfactual;
-2022 Monday/Wednesday cells at 7-30 and 31+ DTE excluded (listing cut, design Section 7.4).  Deep ITM cells
-have no characteristics (design 3.6), so they have no distances and are not in the sample.
+2022 Monday/Wednesday cells at 7-30 and 31+ DTE excluded (listing cut, design Section 7.4).
+All five delta buckets, including Deep ITM, enter covariance estimation, distances and regressions.
 
 Usage: python mahalanobis.py
 Output: results/sigma.csv, data/<event>/pairs.parquet, data/reg_panel_all.csv
@@ -226,9 +226,7 @@ def mahalanobis_main() -> None:
     srows, panels = ([], [])
     for ev in EVENTS:
         cells = pl.read_parquet(OUT_DIR / ev / "cells.parquet")
-        panel = pl.read_parquet(OUT_DIR / ev / "existing_panel.parquet").filter(
-            pl.col("delta_bucket") != "DITM"
-        )
+        panel = pl.read_parquet(OUT_DIR / ev / "existing_panel.parquet")
         sig, rows = sigmas(ev, cells)
         srows.extend(rows)
         pairs, near = distances(ev, cells, panel, sig)
@@ -392,8 +390,8 @@ x = delta-notional-weighted mean of the cell-day characteristics, w = mean share
 volume (fallbacks: pooled over the weekday of t, then by DTE bucket x delta bucket x type).  So similarity
 depends on the calendar and contract terms only; realized new volume does not enter.
 
-Per existing cell-day (Deep ITM cells, which have no characteristics, left out; so the eq. 18 panel and Table 3
-exclude them) (characteristics as in panel.py, distance with the ETF's own Sigma_p from
+Per existing cell-day, including Deep ITM (characteristics as in Build_Event_Panel.py,
+distance with the ETF's own Sigma_p from
 mahalanobis.py, same option type):
   S_theta  = sum_k w_k exp(-theta d_jk^2) / sum_k w_k: S_hat at the structural estimate theta_hat (structural.py,
              version L; Table 5 notes), and theta in {1, 2, 4} (robustness grid)
@@ -416,7 +414,7 @@ from Build_Panel import (
     effective_weekday,
     last_session,
 )
-from Build_Event_Panel import CFG, dte_bucket, listed_expirations
+from Build_Event_Panel import CFG, DELTA, dte_bucket, listed_expirations
 
 NEW_WD = {ev: s["new_wd"] for ev, s in EVENT_SPEC.items()}
 OWN = {ev: s["control_treated"] for ev, s in EVENT_SPEC.items()}
@@ -589,7 +587,7 @@ def build(ev: str, sig: pl.DataFrame, theta_hat: float) -> pl.DataFrame:
         cal.select("underlying_symbol", "trade_date", "eff_wd_k", "dte_bucket_k")
         .unique()
         .join(
-            pl.DataFrame({"delta_bucket_k": ["DOTM", "OTM", "ATM", "ITM"]}), how="cross"
+            pl.DataFrame({"delta_bucket_k": DELTA}), how="cross"
         )
         .join(pl.DataFrame({"option_type": ["C", "P"]}), how="cross")
         .with_columns(pl.col("trade_date").dt.weekday().alias("wd"))
@@ -621,7 +619,6 @@ def build(ev: str, sig: pl.DataFrame, theta_hat: float) -> pl.DataFrame:
         pl.col("period").is_in(["pre", "post"])
         & pl.col("underlying_symbol").is_in(cfg["treated"] + cfg["control"])
         & ~own_new
-        & (pl.col("delta_bucket") != "DITM")
     )
     ex = ex.join(
         nflag,
