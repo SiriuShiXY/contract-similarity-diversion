@@ -521,17 +521,19 @@ def baseline_lambda_table() -> str:
     records = []
 
     def estimate_rows(label, term, section, digits=3, event=None):
-        values, errors = [], []
+        values, statistics = [], []
         for version in versions:
             fit = fits[version]
             value = fit.get(term)
             if value is None:
                 values.append(NA)
-                errors.append("")
+                statistics.append("")
                 continue
             error = fit["se_" + term]
-            values.append(num(value, digits))
-            errors.append(f"[{error:.{digits}f}]")
+            t_stat = value / error
+            normal_p = 1 - erf(abs(t_stat) / sqrt(2))
+            values.append(bstar(value, error, d=digits))
+            statistics.append(tv(value, error))
             records.append(
                 dict(
                     version=version,
@@ -542,12 +544,16 @@ def baseline_lambda_table() -> str:
                     n_e=EVENT_SPEC[event]["n_e"] if event else None,
                     estimate=value,
                     bootstrap_se=error,
+                    t_stat=t_stat,
+                    normal_p_value=normal_p,
+                    significance_stars=stars(normal_p).strip("^{}"),
+                    lambda_zero_boundary=version == "L" and section == "event_lambda",
                     n_boot=fit["n_boot_ok"],
                 )
             )
         return (
             label + " & " + " & ".join(values) + r" \\"
-            + "\n & " + " & ".join(errors) + r" \\"
+            + "\n & " + " & ".join(statistics) + r" \\"
         )
 
     parameters = "\n".join(
@@ -603,6 +609,10 @@ def baseline_lambda_table() -> str:
                     n_e=None,
                     estimate=fits[version][term],
                     bootstrap_se=None,
+                    t_stat=None,
+                    normal_p_value=None,
+                    significance_stars=None,
+                    lambda_zero_boundary=None,
                     n_boot=fits[version]["n_boot_ok"],
                 )
             )
@@ -624,7 +634,7 @@ def baseline_lambda_table() -> str:
 \caption{Baseline Mahalanobis Similarity: Alternative Diversion Specifications}
 \begin{tabularx}{\textwidth}{l*{3}{C}}
 \toprule
- & Logistic L & Identity I & Free F \\
+ & Logistic L$^\dagger$ & Identity I & Free F \\
 $\lambda_e$ specification & $\Lambda(a+b n_e)$ & $a+b n_e$ & Event-specific \\
 Permitted range of $\lambda_e$ & $(0,1)$ & Unrestricted & Unrestricted \\
 \midrule
@@ -654,12 +664,16 @@ IWM 2024 has no structural fit. Deep ITM cells are excluded from the structural 
 new volume; cells affected by the 2022 expiration cut are excluded from the fit.
 $n_e$ is the number of regular expiration weekdays before the event.
 L and I imply identical $\lambda_e$ for events with the same $n_e$; those rows are not independent estimates.
-\item[] Square brackets below estimates contain block-bootstrap standard errors;
-the explicitly labeled percentile row gives the 5th--95th percentile range for $\theta$.
+\item[] Parentheses below estimates contain $t$-statistics: the estimate divided by its
+block-bootstrap standard error. Stars use a two-sided standard-normal approximation
+for a zero coefficient: $^{*}$, $^{**}$, $^{***}$ denote 10\%, 5\%, and 1\%.
+These stars do not use RI $p$-values.
+The explicitly labeled percentile row gives the 5th--95th percentile range for $\theta$.
 The bootstrap resamples five-session blocks separately before and after each event and re-estimates
 the covariance matrices, distances, and model parameters. Valid draw counts are shown in Panel C.
-No significance stars or RI $p$-values are assigned here. L restricts $\lambda_e$ to $(0,1)$,
-so positivity or a positive bootstrap percentile bound is not by itself a test of $\lambda_e=0$.
+$^\dagger$ L restricts $\lambda_e$ to $(0,1)$; its $\lambda_e$ stars are only the displayed
+normal-approximation Wald calculation. Because zero is a boundary value, they are not a
+regular test of $\lambda_e=0$. No structural RI test has been computed.
 Table 4 reports the separate aggregate-volume ratio; these structural estimates fit the
 weighted pattern of cell-level losses. Out-of-sample results are reported separately in Table 6.
 \end{tablenotes}
@@ -697,7 +711,7 @@ def fill_table_shells_main() -> None:
     )
     sh.sub(
         "The tables follow the paper's chain of argument. Grey \\ph{} entries are placeholders. Numbers in black are taken from the existing reports (\\textit{Existing and New Contracts after the Weekly-Expiration Listings} and \\textit{Is the Control Group Affected by the New Expirations?}) and must be recomputed under the new definitions (delta notional, control-family adjustment) before use. Entries marked $^\\dagger$ must be verified against exchange notices.",
-        "The tables follow the paper's chain of argument. Black entries in Tables 1--6, Table 6B and Panel C of Table 9 are the baseline estimates (design steps 2--6: the five ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them. Table 6B compares logistic, identity and free-event diversion at baseline similarity, with bootstrap standard errors in square brackets.",
+        "The tables follow the paper's chain of argument. Black entries in Tables 1--6, Table 6B and Panel C of Table 9 are the baseline estimates (design steps 2--6: the five ETF events with data, delta notional at a common volatility, the control-adjusted counterfactual, Mahalanobis similarity on log trading hours and $|\\Delta|$); the baseline report gives the details. Grey \\ph{} entries are steps the baseline does not cover: Table 6, columns (2)--(5), Tables 7, 8 and 10, and Panels A--B of Table 9, whose black entries come from the existing control-group report. ``--'' marks events without data or not estimated. Listing dates are verified against exchange notices. Figures in parentheses are $t$-statistics (the estimate over its standard error), as in Panel A of Table 9; the notes name the standard errors behind them. Table 6B compares logistic, identity and free-event diversion at baseline similarity, with t-statistics in parentheses and stars from a two-sided normal approximation; its notes identify the logistic boundary restriction.",
     )
     for fn in (table1, table2, table3, table4, table5, table6, table9):
         fn(sh)
